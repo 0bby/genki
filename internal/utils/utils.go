@@ -11,71 +11,12 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/gabehf/koito/internal/mbz"
-	"github.com/gabehf/koito/internal/models"
-	"github.com/google/uuid"
 )
 
 func IDFromString(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "-")
 	return s
-}
-
-func ParseUUIDSlice(str []string) ([]uuid.UUID, error) {
-	ret := make([]uuid.UUID, 0)
-	for _, s := range str {
-		parsed, err := uuid.Parse(s)
-		if err != nil {
-			continue
-		}
-		ret = append(ret, parsed)
-	}
-	return ret, nil
-}
-
-func FlattenArtistMbzIDs(artists []*models.Artist) []uuid.UUID {
-	ids := make([]uuid.UUID, 0)
-	for _, a := range artists {
-		if a.MbzID == nil || *a.MbzID == uuid.Nil {
-			continue
-		}
-		ids = append(ids, *a.MbzID)
-	}
-	return ids
-}
-
-func FlattenArtistNames(artists []*models.Artist) []string {
-	names := make([]string, 0)
-	for _, a := range artists {
-		names = append(names, a.Aliases...)
-	}
-	return names
-}
-
-func FlattenSimpleArtistNames(artists []models.SimpleArtist) []string {
-	names := make([]string, 0)
-	for _, a := range artists {
-		names = append(names, a.Name)
-	}
-	return names
-}
-
-func FlattenMbzArtistCreditNames(artists []mbz.MusicBrainzArtistCredit) []string {
-	names := make([]string, len(artists))
-	for i, a := range artists {
-		names[i] = a.Name
-	}
-	return names
-}
-
-func FlattenArtistIDs(artists []*models.Artist) []int32 {
-	ids := make([]int32, len(artists))
-	for i, a := range artists {
-		ids[i] = a.ID
-	}
-	return ids
 }
 
 // DateRange takes optional week, month, and year. If all are 0, it returns the zero time range.
@@ -334,10 +275,3 @@ func ParseBool(s string) (value, ok bool) {
 	}
 }
 
-func FlattenAliases(aliases []models.Alias) []string {
-	ret := make([]string, len(aliases))
-	for i := range aliases {
-		ret[i] = aliases[i].Alias
-	}
-	return ret
-}

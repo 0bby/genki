@@ -2,13 +2,12 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   index("routes/Home.tsx"),
-  route("/artist/:id", "routes/MediaItems/Artist.tsx"),
-  route("/album/:id", "routes/MediaItems/Album.tsx"),
-  route("/track/:id", "routes/MediaItems/Track.tsx"),
-  route("/chart/top-albums", "routes/Charts/AlbumChart.tsx"),
-  route("/chart/top-artists", "routes/Charts/ArtistChart.tsx"),
-  route("/chart/top-tracks", "routes/Charts/TrackChart.tsx"),
-  route("/listens", "routes/Charts/Listens.tsx"),
-  route("/rewind", "routes/RewindPage.tsx"),
+  route("/exercise/:id", "routes/ExerciseDetail.tsx"),
+  route("/workout/:id", "routes/WorkoutDetail.tsx"),
+  route("/chart/top-exercises", "routes/Charts/ExerciseChart.tsx"),
+  route("/chart/top-muscles", "routes/Charts/MuscleChart.tsx"),
+  route("/workouts", "routes/Charts/WorkoutList.tsx"),
+  route("/recap", "routes/RecapPage.tsx"),
+  route("/health", "routes/HealthPage.tsx"),
   route("/theme-helper", "routes/ThemeHelper.tsx"),
 ] satisfies RouteConfig;

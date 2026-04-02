@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/gabehf/koito/internal/cfg"
-	"github.com/gabehf/koito/internal/logger"
+	"github.com/0bby/genki/internal/cfg"
+	"github.com/0bby/genki/internal/logger"
 )
 
 func AllowedHosts(next http.Handler) http.Handler {

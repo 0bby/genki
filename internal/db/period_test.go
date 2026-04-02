@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gabehf/koito/internal/db"
+	"github.com/0bby/genki/internal/db"
 	"github.com/stretchr/testify/require"
 )
 

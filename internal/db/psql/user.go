@@ -8,10 +8,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/gabehf/koito/internal/db"
-	"github.com/gabehf/koito/internal/logger"
-	"github.com/gabehf/koito/internal/models"
-	"github.com/gabehf/koito/internal/repository"
+	"github.com/0bby/genki/internal/db"
+	"github.com/0bby/genki/internal/logger"
+	"github.com/0bby/genki/internal/models"
+	"github.com/0bby/genki/internal/repository"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )

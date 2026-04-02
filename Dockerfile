@@ -1,48 +1,37 @@
-FROM node AS frontend
+FROM node:22 AS frontend
 
-ARG KOITO_VERSION
-ENV VITE_KOITO_VERSION=$KOITO_VERSION
-ENV BUILD_TARGET=docker
+ARG GENKI_VERSION
+ENV VITE_GENKI_VERSION=$GENKI_VERSION
 
 WORKDIR /client
-COPY ./client/package.json ./client/yarn.lock ./
-RUN yarn install
+COPY ./client/package.json ./client/package-lock.json ./
+RUN npm ci
 COPY ./client .
-
-RUN yarn run build
+RUN npm run build
 
 FROM golang:1.24 AS backend
 
-ARG KOITO_VERSION
-ENV CGO_ENABLED=1
+ARG GENKI_VERSION
+ENV CGO_ENABLED=0
 ENV GOOS=linux
 
 WORKDIR /app
-
-RUN apt-get update && \
-	apt-get install -y libvips-dev pkg-config && \
-	rm -rf /var/lib/apt/lists/*
-
 COPY go.mod go.sum ./
 RUN go mod download
-
 COPY . .
-
-RUN go build -ldflags "-X main.Version=$KOITO_VERSION" -o app ./cmd/api
-
+RUN go build -ldflags "-X main.Version=$GENKI_VERSION" -o app ./cmd/api
 
 FROM debian:bookworm-slim AS final
 
 WORKDIR /app
 
 RUN apt-get update && \
-	apt-get install -y libvips42 && \
+	apt-get install -y ca-certificates && \
 	rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend /app/app ./app
 COPY --from=frontend /client/build ./client/build
 COPY ./client/public ./client/public
-COPY ./assets ./assets
 COPY ./db ./db
 
 EXPOSE 4110

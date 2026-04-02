@@ -1,21 +1,18 @@
-import { Link, useNavigate } from "react-router";
-import ArtistLinks from "./ArtistLinks";
+import { Link } from "react-router";
 import {
-  imageUrl,
-  type Album,
-  type Artist,
-  type Track,
+  type Exercise,
+  type Muscle,
   type PaginatedResponse,
   type Ranked,
 } from "api/api";
 
-type Item = Album | Track | Artist;
+type Item = Exercise | Muscle;
 
 interface Props<T extends Ranked<Item>> {
   data: PaginatedResponse<T>;
   separators?: ConstrainBoolean;
   ranked?: boolean;
-  type: "album" | "track" | "artist";
+  type: "exercise" | "muscle";
   className?: string;
 }
 
@@ -45,7 +42,6 @@ export default function TopItemList<T extends Ranked<Item>>({
               rank={item.rank}
               item={item.item}
               type={type}
-              key={type + item.item.id}
             />
           </div>
         );
@@ -61,109 +57,52 @@ function ItemCard({
   ranked,
 }: {
   item: Item;
-  type: "album" | "track" | "artist";
+  type: "exercise" | "muscle";
   rank: number;
   ranked?: boolean;
 }) {
-  const itemClasses = `flex items-center gap-2`;
+  const itemClasses = "flex items-center gap-2";
 
   switch (type) {
-    case "album": {
-      const album = item as Album;
-
+    case "exercise": {
+      const exercise = item as Exercise;
       return (
         <div style={{ fontSize: 12 }} className={itemClasses}>
           {ranked && <div className="w-7 text-end">{rank}</div>}
-          <Link to={`/album/${album.id}`}>
-            <img
-              loading="lazy"
-              src={imageUrl(album.image, "small")}
-              alt={album.title}
-              className="min-w-[48px]"
-            />
-          </Link>
+          <div className="min-w-[48px] w-[48px] h-[48px] rounded bg-(--color-bg-tertiary) flex items-center justify-center text-lg">
+            🏋️
+          </div>
           <div>
             <Link
-              to={`/album/${album.id}`}
+              to={`/exercise/${exercise.id}`}
               className="hover:text-(--color-fg-secondary)"
             >
-              <span style={{ fontSize: 14 }}>{album.title}</span>
+              <span style={{ fontSize: 14 }}>{exercise.name}</span>
             </Link>
-            <br />
-            {album.is_various_artists ? (
-              <span className="color-fg-secondary">Various Artists</span>
-            ) : (
-              <div>
-                <ArtistLinks
-                  artists={
-                    album.artists
-                      ? [album.artists[0]]
-                      : [{ id: 0, name: "Unknown Artist" }]
-                  }
-                />
-              </div>
+            {exercise.category && (
+              <div className="color-fg-secondary">{exercise.category.name}</div>
             )}
-            <div className="color-fg-secondary">{album.listen_count} plays</div>
+            <div className="color-fg-secondary">
+              {exercise.total_sets ?? 0} sets &middot; {exercise.total_reps ?? 0} reps
+            </div>
           </div>
         </div>
       );
     }
-    case "track": {
-      const track = item as Track;
-
+    case "muscle": {
+      const muscle = item as Muscle;
       return (
         <div style={{ fontSize: 12 }} className={itemClasses}>
           {ranked && <div className="w-7 text-end">{rank}</div>}
-          <Link to={`/track/${track.id}`}>
-            <img
-              loading="lazy"
-              src={imageUrl(track.image, "small")}
-              alt={track.title}
-              className="min-w-[48px]"
-            />
-          </Link>
+          <div className="min-w-[48px] w-[48px] h-[48px] rounded bg-(--color-bg-tertiary) flex items-center justify-center text-lg">
+            💪
+          </div>
           <div>
-            <Link
-              to={`/track/${track.id}`}
-              className="hover:text-(--color-fg-secondary)"
-            >
-              <span style={{ fontSize: 14 }}>{track.title}</span>
-            </Link>
-            <br />
-            <div>
-              <ArtistLinks
-                artists={track.artists || [{ id: 0, Name: "Unknown Artist" }]}
-              />
+            <span style={{ fontSize: 14 }}>{muscle.name_en || muscle.name}</span>
+            <div className="color-fg-secondary">
+              {muscle.is_front ? "Front" : "Back"}
             </div>
-            <div className="color-fg-secondary">{track.listen_count} plays</div>
           </div>
-        </div>
-      );
-    }
-    case "artist": {
-      const artist = item as Artist;
-      return (
-        <div style={{ fontSize: 12 }} className={itemClasses}>
-          {ranked && <div className="w-7 text-end">{rank}</div>}
-          <Link
-            className={
-              itemClasses + " mt-1 mb-[6px] hover:text-(--color-fg-secondary)"
-            }
-            to={`/artist/${artist.id}`}
-          >
-            <img
-              loading="lazy"
-              src={imageUrl(artist.image, "small")}
-              alt={artist.name}
-              className="min-w-[48px]"
-            />
-            <div>
-              <span style={{ fontSize: 14 }}>{artist.name}</span>
-              <div className="color-fg-secondary">
-                {artist.listen_count} plays
-              </div>
-            </div>
-          </Link>
         </div>
       );
     }

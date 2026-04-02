@@ -3,60 +3,8 @@ package db
 import (
 	"time"
 
-	"github.com/gabehf/koito/internal/models"
-	"github.com/google/uuid"
+	"github.com/0bby/genki/internal/models"
 )
-
-type GetAlbumOpts struct {
-	ID            int32
-	MusicBrainzID uuid.UUID
-	ArtistID      int32
-	Title         string
-	Titles        []string
-	Image         uuid.UUID
-}
-
-type GetArtistOpts struct {
-	ID            int32
-	MusicBrainzID uuid.UUID
-	Name          string
-	Image         uuid.UUID
-}
-
-type GetTrackOpts struct {
-	ID            int32
-	MusicBrainzID uuid.UUID
-	Title         string
-	ReleaseID     int32
-	ArtistIDs     []int32
-}
-
-type SaveTrackOpts struct {
-	Title          string
-	AlbumID        int32
-	ArtistIDs      []int32
-	RecordingMbzID uuid.UUID
-	Duration       int32
-}
-
-type SaveAlbumOpts struct {
-	Title          string
-	MusicBrainzID  uuid.UUID
-	Type           string
-	ArtistIDs      []int32
-	VariousArtists bool
-	Image          uuid.UUID
-	ImageSrc       string
-	Aliases        []string
-}
-
-type SaveArtistOpts struct {
-	Name          string
-	MusicBrainzID uuid.UUID
-	Aliases       []string
-	Image         uuid.UUID
-	ImageSrc      string
-}
 
 type UpdateApiKeyLabelOpts struct {
 	UserID int32
@@ -76,87 +24,28 @@ type SaveApiKeyOpts struct {
 	Label  string
 }
 
-type SaveListenOpts struct {
-	TrackID int32
-	Time    time.Time
-	UserID  int32
-	Client  string
-}
-
-type UpdateTrackOpts struct {
-	ID            int32
-	MusicBrainzID uuid.UUID
-	Duration      int32
-}
-
-type UpdateArtistOpts struct {
-	ID            int32
-	MusicBrainzID uuid.UUID
-	Image         uuid.UUID
-	ImageSrc      string
-}
-
-type UpdateAlbumOpts struct {
-	ID                   int32
-	MusicBrainzID        uuid.UUID
-	Image                uuid.UUID
-	ImageSrc             string
-	VariousArtistsUpdate bool
-	VariousArtistsValue  bool
-}
-
 type UpdateUserOpts struct {
 	ID       int32
 	Username string
 	Password string
 }
 
-type AddArtistsToAlbumOpts struct {
-	AlbumID   int32
-	ArtistIDs []int32
-}
-
 type GetItemsOpts struct {
 	Limit     int
 	Page      int
 	Timeframe Timeframe
+	UserID    int32
 
-	// Used only for getting top tracks
-	ArtistID int
-	AlbumID  int
-
-	// Used for getting listens
-	TrackID int
+	// Filter by exercise
+	ExerciseID int
 }
 
-type ListenActivityOpts struct {
+type ActivityOpts struct {
+	Metric   ActivityMetric
 	Step     StepInterval
 	Range    int
 	Month    int
 	Year     int
 	Timezone *time.Location
-	AlbumID  int32
-	ArtistID int32
-	TrackID  int32
-}
-
-type TimeListenedOpts struct {
-	Timeframe Timeframe
-	AlbumID   int32
-	ArtistID  int32
-	TrackID   int32
-}
-
-type GetExportPageOpts struct {
-	UserID     int32
-	ListenedAt time.Time
-	TrackID    int32
-	Limit      int32
-}
-
-type GetInterestOpts struct {
-	Buckets  int
-	AlbumID  int32
-	ArtistID int32
-	TrackID  int32
+	UserID   int32
 }

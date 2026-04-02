@@ -1,23 +1,10 @@
 package db
 
-import (
-	"time"
+import "time"
 
-	"github.com/gabehf/koito/internal/models"
-	"github.com/google/uuid"
-)
-
-type InformationSource string
-
-const (
-	InformationSourceInferred     InformationSource = "Inferred"
-	InformationSourceMusicBrainz  InformationSource = "MusicBrainz"
-	InformationSourceUserProvided InformationSource = "User"
-)
-
-type ListenActivityItem struct {
-	Start   time.Time `json:"start_time"`
-	Listens int64     `json:"listens"`
+type ActivityItem struct {
+	Start time.Time `json:"start_time"`
+	Value int64     `json:"value"`
 }
 
 type PaginatedResponse[T any] struct {
@@ -33,25 +20,25 @@ type RankedItem[T any] struct {
 	Rank int64 `json:"rank"`
 }
 
-type ExportItem struct {
-	ListenedAt         time.Time
-	UserID             int32
-	Client             *string
-	TrackID            int32
-	TrackMbid          *uuid.UUID
-	TrackDuration      int32
-	TrackAliases       []models.Alias
-	ReleaseID          int32
-	ReleaseMbid        *uuid.UUID
-	ReleaseImage       *uuid.UUID
-	ReleaseImageSource string
-	VariousArtists     bool
-	ReleaseAliases     []models.Alias
-	Artists            []models.ArtistWithFullAliases
+type FitnessStats struct {
+	WorkoutCount       int64   `json:"workout_count"`
+	ExerciseCount      int64   `json:"exercise_count"`
+	TotalActiveMinutes int64   `json:"total_active_minutes"`
+	TotalSteps         int64   `json:"total_steps"`
+	AvgSleepMinutes    int64   `json:"avg_sleep_minutes"`
+	TotalSets          int64   `json:"total_sets"`
+	TotalReps          int64   `json:"total_reps"`
+	TotalVolumeKg      float64 `json:"total_volume_kg"`
+	AvgWorkoutDuration int64   `json:"avg_workout_duration_min"`
+	LongestStreak      int64   `json:"longest_streak"`
+	NewExercises       int64   `json:"new_exercises"`
 }
 
-type InterestBucket struct {
-	BucketStart time.Time `json:"bucket_start"`
-	BucketEnd   time.Time `json:"bucket_end"`
-	ListenCount int64     `json:"listen_count"`
-}
+type ActivityMetric string
+
+const (
+	MetricWorkouts      ActivityMetric = "workouts"
+	MetricSteps         ActivityMetric = "steps"
+	MetricSleep         ActivityMetric = "sleep"
+	MetricActiveMinutes ActivityMetric = "active_minutes"
+)

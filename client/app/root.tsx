@@ -55,7 +55,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           sizes="180x180"
           href="/apple-touch-icon.png"
         />
-        <meta name="apple-mobile-web-app-title" content="Koito" />
+        <meta name="apple-mobile-web-app-title" content="Genki" />
         <link rel="manifest" href="/site.webmanifest" />
         <Meta />
         <Links />
@@ -110,7 +110,7 @@ export function ErrorBoundary() {
     stack = error.stack;
   }
 
-  const title = `${message} - Koito`;
+  const title = `${message} - Genki`;
 
   return (
     <AppProvider>

@@ -1,0 +1,46 @@
+services:
+  genki:
+    build:
+      context: .
+      args:
+        GENKI_VERSION: "0.1.0"
+    container_name: genki
+    restart: unless-stopped
+    ports:
+      - "4111:4110"
+    environment:
+      - GENKI_DATABASE_URL=postgres://genki:genki@genki-db:5432/genki?sslmode=disable
+      - GENKI_DEFAULT_USERNAME=admin
+      - GENKI_DEFAULT_PASSWORD=${GENKI_DEFAULT_PASSWORD:-changeme}
+      - GENKI_ALLOWED_HOSTS=*
+      - GENKI_CORS_ALLOWED_ORIGINS=https://genki.obby.page
+      - GENKI_LOGIN_GATE=true
+      - GENKI_WGER_URL=${GENKI_WGER_URL:-}
+      - GENKI_WGER_TOKEN=${GENKI_WGER_TOKEN:-}
+      - GENKI_FITBIT_CLIENT_ID=${GENKI_FITBIT_CLIENT_ID:-}
+      - GENKI_FITBIT_CLIENT_SECRET=${GENKI_FITBIT_CLIENT_SECRET:-}
+      - GENKI_FITBIT_REDIRECT_URI=${GENKI_FITBIT_REDIRECT_URI:-https://genki.obby.page/apis/web/v1/oauth/fitbit/callback}
+      - GENKI_WGER_SYNC_INTERVAL=${GENKI_WGER_SYNC_INTERVAL:-5m}
+      - GENKI_FITBIT_SYNC_INTERVAL=${GENKI_FITBIT_SYNC_INTERVAL:-15m}
+    depends_on:
+      genki-db:
+        condition: service_healthy
+
+  genki-db:
+    image: postgres:16-alpine
+    container_name: genki-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=genki
+      - POSTGRES_PASSWORD=genki
+      - POSTGRES_DB=genki
+    volumes:
+      - genki-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U genki"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  genki-pgdata:

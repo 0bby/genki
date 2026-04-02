@@ -1,77 +1,69 @@
-import { imageUrl, type RewindStats } from "api/api";
+import type { RecapStats } from "api/api";
 import RewindStatText from "./RewindStatText";
-import { RewindTopItem } from "./RewindTopItem";
 
 interface Props {
-  stats: RewindStats;
-  includeTime?: boolean;
+  stats: RecapStats;
 }
 
 export default function Rewind(props: Props) {
-  const artistimg = props.stats.top_artists[0]?.item.image;
-  const albumimg = props.stats.top_albums[0]?.item.image;
-  const trackimg = props.stats.top_tracks[0]?.item.image;
-  if (
-    !props.stats.top_artists[0] ||
-    !props.stats.top_albums[0] ||
-    !props.stats.top_tracks[0]
-  ) {
-    return <p>Not enough data exists to create a Rewind for this period :(</p>;
+  const { stats } = props;
+
+  if (!stats.top_exercises || stats.top_exercises.length === 0) {
+    return <p>Not enough data exists to create a Recap for this period.</p>;
   }
+
   return (
     <div className="flex flex-col gap-7">
-      <h2>{props.stats.title}</h2>
-      <RewindTopItem
-        title="Top Artist"
-        imageSrc={imageUrl(artistimg, "medium")}
-        items={props.stats.top_artists}
-        getLabel={(a) => a.name}
-        includeTime={props.includeTime}
-      />
+      <h2>{stats.title}</h2>
 
-      <RewindTopItem
-        title="Top Album"
-        imageSrc={imageUrl(albumimg, "medium")}
-        items={props.stats.top_albums}
-        getLabel={(a) => a.title}
-        includeTime={props.includeTime}
-      />
+      <div className="flex flex-col gap-2">
+        <h4>Top Exercises</h4>
+        {stats.top_exercises.map((e, i) => (
+          <div key={e.item.id} className="text-sm flex items-center gap-2">
+            <span className="font-bold w-6 text-end">{e.rank}</span>
+            <span>{e.item.name}</span>
+            <span className="text-(--color-fg-tertiary)">
+              {e.item.total_sets ?? 0} sets &middot; {e.item.total_reps ?? 0} reps
+            </span>
+          </div>
+        ))}
+      </div>
 
-      <RewindTopItem
-        title="Top Track"
-        imageSrc={imageUrl(trackimg, "medium")}
-        items={props.stats.top_tracks}
-        getLabel={(t) => t.title}
-        includeTime={props.includeTime}
-      />
+      {stats.top_muscles && stats.top_muscles.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h4>Top Muscles</h4>
+          {stats.top_muscles.map((m) => (
+            <div key={m.item.id} className="text-sm flex items-center gap-2">
+              <span className="font-bold w-6 text-end">{m.rank}</span>
+              <span>{m.item.name_en || m.item.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-5">
+        <RewindStatText figure={`${stats.total_workouts}`} text="Workouts" />
+        <RewindStatText figure={`${stats.total_sets}`} text="Total sets" />
+        <RewindStatText figure={`${stats.total_reps}`} text="Total reps" />
         <RewindStatText
-          figure={`${props.stats.minutes_listened}`}
-          text="Minutes listened"
-        />
-        <RewindStatText figure={`${props.stats.unique_tracks}`} text="Tracks" />
-        <RewindStatText
-          figure={`${props.stats.new_tracks}`}
-          text="New tracks"
-        />
-        <RewindStatText figure={`${props.stats.plays}`} text="Plays" />
-        <RewindStatText figure={`${props.stats.unique_albums}`} text="Albums" />
-        <RewindStatText
-          figure={`${props.stats.new_albums}`}
-          text="New albums"
+          figure={`${stats.total_active_minutes}`}
+          text="Active minutes"
         />
         <RewindStatText
-          figure={`${props.stats.avg_plays_per_day.toFixed(1)}`}
-          text="Plays per day"
+          figure={`${stats.avg_workout_duration.toFixed(0)}`}
+          text="Avg workout (min)"
         />
         <RewindStatText
-          figure={`${props.stats.unique_artists}`}
-          text="Artists"
+          figure={`${stats.exercises_tried}`}
+          text="Exercises tried"
         />
         <RewindStatText
-          figure={`${props.stats.new_artists}`}
-          text="New artists"
+          figure={`${stats.workout_streak}`}
+          text="Best streak (days)"
+        />
+        <RewindStatText
+          figure={`${stats.new_exercises}`}
+          text="New exercises"
         />
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AsyncButton } from "../AsyncButton";
-import { getExport } from "api/api";
+
 
 export default function ExportModal() {
   const [loading, setLoading] = useState(false);
@@ -17,7 +17,7 @@ export default function ExportModal() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "koito_export.json";
+            a.download = "genki_export.json";
             document.body.appendChild(a);
             a.click();
             a.remove();

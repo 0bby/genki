@@ -8,17 +8,7 @@ sql:
         package: "repository"
         out: "internal/repository"
         sql_package: "pgx/v5"
-        rename:
-          musicbrainz_id: "MusicBrainzID"
         overrides:
-          - column: "artists.id"
-            go_type: "int32"
-          - column: "release_groups.id"
-            go_type: "int32"
-          - column: "tracks.id"
-            go_type: "int32"
-          - column: "listens.id"
-            go_type: "int32"
           - db_type: "uuid"
             go_type:
               import: "github.com/google/uuid"
@@ -37,15 +27,16 @@ sql:
             go_type:
               import: "time"
               type: "Time"
-          - column: "bucketed_listens.bucket_start"
+          - db_type: "numeric"
             go_type:
-              import: "time"
-              type: "Time"
-          - column: "listens.client"
-            go_type:
-              type: "string"
+              import: "github.com/shopspring/decimal"
+              type: "Decimal"
               pointer: true
             nullable: true
+          - db_type: "numeric"
+            go_type:
+              import: "github.com/shopspring/decimal"
+              type: "Decimal"
           - column: "sessions.expires_at"
             go_type:
               import: "time"
@@ -54,4 +45,3 @@ sql:
             go_type:
               import: "time"
               type: "Time"
-

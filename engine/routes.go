@@ -8,13 +8,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gabehf/koito/engine/handlers"
-	"github.com/gabehf/koito/engine/middleware"
-	"github.com/gabehf/koito/internal/cfg"
-	"github.com/gabehf/koito/internal/db"
-	mbz "github.com/gabehf/koito/internal/mbz"
+	"github.com/0bby/genki/engine/handlers"
+	"github.com/0bby/genki/engine/middleware"
+	"github.com/0bby/genki/internal/cfg"
+	"github.com/0bby/genki/internal/db"
+	gosync "github.com/0bby/genki/internal/sync"
 	"github.com/go-chi/chi/v5"
-	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 )
@@ -23,7 +22,7 @@ func bindRoutes(
 	r *chi.Mux,
 	ready *atomic.Bool,
 	db db.DB,
-	mbz mbz.MusicBrainzCaller,
+	syncMgr *gosync.Manager,
 ) {
 	if !(len(cfg.AllowedOrigins()) == 0) && !(cfg.AllowedOrigins()[0] == "") {
 		r.Use(cors.Handler(cors.Options{
@@ -31,30 +30,44 @@ func bindRoutes(
 			AllowedMethods: []string{"GET", "OPTIONS", "HEAD"},
 		}))
 	}
-	r.With(chimiddleware.RequestSize(5<<20)).
-		Get("/images/{size}/{filename}", handlers.ImageHandler(db))
 
 	r.Route("/apis/web/v1", func(r chi.Router) {
 		r.Get("/config", handlers.GetCfgHandler())
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Authenticate(db, middleware.AuthModeLoginGate))
-			r.Get("/artist", handlers.GetArtistHandler(db))
-			r.Get("/artists", handlers.GetArtistsForItemHandler(db))
-			r.Get("/album", handlers.GetAlbumHandler(db))
-			r.Get("/track", handlers.GetTrackHandler(db))
-			r.Get("/top-tracks", handlers.GetTopTracksHandler(db))
-			r.Get("/top-albums", handlers.GetTopAlbumsHandler(db))
-			r.Get("/top-artists", handlers.GetTopArtistsHandler(db))
-			r.Get("/listens", handlers.GetListensHandler(db))
-			r.Get("/listen-activity", handlers.GetListenActivityHandler(db))
-			r.Get("/now-playing", handlers.NowPlayingHandler(db))
+
+			// Activity heatmap
+			r.Get("/activity", handlers.GetActivityHandler(db))
+
+			// Workouts
+			r.Get("/workouts", handlers.GetWorkoutsHandler(db))
+			r.Get("/workout", handlers.GetWorkoutHandler(db))
+
+			// Top lists
+			r.Get("/top-exercises", handlers.GetTopExercisesHandler(db))
+			r.Get("/top-muscles", handlers.GetTopMusclesHandler(db))
+
+			// Exercise detail
+			r.Get("/exercise", handlers.GetExerciseHandler(db))
+
+			// Health data
+			r.Get("/sleep", handlers.GetSleepHandler(db))
+			r.Get("/heart-rate", handlers.GetHeartRateHandler(db))
+			r.Get("/measurements", handlers.GetMeasurementsHandler(db))
+			r.Get("/steps", handlers.GetStepsHandler(db))
+
+			// Stats & summary
 			r.Get("/stats", handlers.StatsHandler(db))
-			r.Get("/search", handlers.SearchHandler(db))
-			r.Get("/aliases", handlers.GetAliasesHandler(db))
 			r.Get("/summary", handlers.SummaryHandler(db))
-			r.Get("/interest", handlers.GetInterestHandler(db))
+
+			// Search
+			r.Get("/search", handlers.SearchHandler(db))
+
+			// Sync status
+			r.Get("/sync/status", handlers.SyncStatusHandler(db))
 		})
+
 		r.Post("/logout", handlers.LogoutHandler(db))
 		if !cfg.RateLimitDisabled() {
 			r.With(httprate.Limit(
@@ -78,41 +91,25 @@ func bindRoutes(
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Authenticate(db, middleware.AuthModeSessionOrAPIKey))
-			r.Get("/export", handlers.ExportHandler(db))
-			r.Post("/replace-image", handlers.ReplaceImageHandler(db))
-			r.Patch("/album", handlers.UpdateAlbumHandler(db))
-			r.Post("/merge/tracks", handlers.MergeTracksHandler(db))
-			r.Post("/merge/albums", handlers.MergeReleaseGroupsHandler(db))
-			r.Post("/merge/artists", handlers.MergeArtistsHandler(db))
-			r.Delete("/artist", handlers.DeleteArtistHandler(db))
-			r.Post("/artists/primary", handlers.SetPrimaryArtistHandler(db))
-			r.Delete("/album", handlers.DeleteAlbumHandler(db))
-			r.Delete("/track", handlers.DeleteTrackHandler(db))
-			r.Post("/listen", handlers.SubmitListenWithIDHandler(db))
-			r.Delete("/listen", handlers.DeleteListenHandler(db))
-			r.Post("/aliases", handlers.CreateAliasHandler(db))
-			r.Post("/aliases/delete", handlers.DeleteAliasHandler(db))
-			r.Post("/aliases/primary", handlers.SetPrimaryAliasHandler(db))
-			r.Patch("/mbzid", handlers.UpdateMbzIdHandler(db))
+
+			// API key management
 			r.Get("/user/apikeys", handlers.GetApiKeysHandler(db))
 			r.Post("/user/apikeys", handlers.GenerateApiKeyHandler(db))
 			r.Patch("/user/apikeys", handlers.UpdateApiKeyLabelHandler(db))
 			r.Delete("/user/apikeys", handlers.DeleteApiKeyHandler(db))
 			r.Get("/user/me", handlers.MeHandler(db))
 			r.Patch("/user", handlers.UpdateUserHandler(db))
+
+			// Manual sync trigger
+			r.Post("/sync/trigger", handlers.SyncTriggerHandler(db, syncMgr))
+
+			// Fitbit OAuth
+			r.Post("/oauth/fitbit/init", handlers.FitbitOAuthInitHandler())
+			r.Get("/oauth/fitbit/callback", handlers.FitbitOAuthCallbackHandler(db))
+
+			// Workout management
+			r.Delete("/workout", handlers.DeleteWorkoutHandler(db))
 		})
-	})
-
-	r.Route("/apis/listenbrainz/1", func(r chi.Router) {
-		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins: []string{"*"},
-			AllowedHeaders: []string{"Content-Type", "Authorization"},
-		}))
-
-		r.With(middleware.Authenticate(db, middleware.AuthModeAPIKey)).
-			Post("/submit-listens", handlers.LbzSubmitListenHandler(db, mbz))
-		r.With(middleware.Authenticate(db, middleware.AuthModeAPIKey)).
-			Get("/validate-token", handlers.LbzValidateTokenHandler(db))
 	})
 
 	// serve react client
@@ -125,25 +122,18 @@ func bindRoutes(
 	publicServer(r, "/public", filesDir)
 }
 
-// FileServer conveniently sets up a http.FileServer handler to serve
-// static files from a http.FileSystem.
 func fileServer(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer does not permit any URL parameters.")
 	}
 
-	// Serve static files
 	fs := http.FileServer(root)
 	r.Get(path+"*", func(w http.ResponseWriter, r *http.Request) {
-		// Check if file exists
 		filePath := filepath.Join("client/build/client", strings.TrimPrefix(r.URL.Path, path))
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			// File doesn't exist, serve index.html
 			http.ServeFile(w, r, filepath.Join("client/build/client", "index.html"))
 			return
 		}
-
-		// Serve file normally
 		fs.ServeHTTP(w, r)
 	})
 }

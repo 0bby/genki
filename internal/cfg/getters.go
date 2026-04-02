@@ -2,7 +2,6 @@ package cfg
 
 import (
 	"fmt"
-	"regexp"
 	"time"
 )
 
@@ -30,18 +29,6 @@ func DatabaseUrl() string {
 	return globalConfig.databaseUrl
 }
 
-func MusicBrainzUrl() string {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.musicBrainzUrl
-}
-
-func MusicBrainzRateLimit() int {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.musicBrainzRateLimit
-}
-
 func LogLevel() int {
 	lock.RLock()
 	defer lock.RUnlock()
@@ -52,24 +39,6 @@ func StructuredLogging() bool {
 	lock.RLock()
 	defer lock.RUnlock()
 	return globalConfig.structuredLogging
-}
-
-func LbzRelayEnabled() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.lbzRelayEnabled
-}
-
-func LbzRelayUrl() string {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.lbzRelayUrl
-}
-
-func LbzRelayToken() string {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.lbzRelayToken
 }
 
 func DefaultPassword() string {
@@ -88,60 +57,6 @@ func DefaultTheme() string {
 	lock.RLock()
 	defer lock.RUnlock()
 	return globalConfig.defaultTheme
-}
-
-func FullImageCacheEnabled() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.enableFullImageCache
-}
-
-func DeezerDisabled() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.disableDeezer
-}
-
-func CoverArtArchiveDisabled() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.disableCAA
-}
-
-func MusicBrainzDisabled() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.disableMusicBrainz
-}
-
-func SubsonicEnabled() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.subsonicEnabled
-}
-
-func SubsonicUrl() string {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.subsonicUrl
-}
-
-func SubsonicParams() string {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.subsonicParams
-}
-
-func LastFMApiKey() string {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.lastfmApiKey
-}
-
-func SkipImport() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.skipImport
 }
 
 func AllowedHosts() []string {
@@ -168,31 +83,6 @@ func RateLimitDisabled() bool {
 	return globalConfig.disableRateLimit
 }
 
-func ThrottleImportMs() int {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.importThrottleMs
-}
-
-// returns the before, after times, in that order
-func ImportWindow() (time.Time, time.Time) {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.importBefore, globalConfig.importAfter
-}
-
-func FetchImagesDuringImport() bool {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.fetchImageDuringImport
-}
-
-func ArtistSeparators() []*regexp.Regexp {
-	lock.RLock()
-	defer lock.RUnlock()
-	return globalConfig.artistSeparators
-}
-
 func LoginGate() bool {
 	lock.RLock()
 	defer lock.RUnlock()
@@ -203,4 +93,72 @@ func ForceTZ() *time.Location {
 	lock.RLock()
 	defer lock.RUnlock()
 	return globalConfig.forceTZ
+}
+
+// Fitness integration getters
+
+func WgerURL() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.wgerURL
+}
+
+func WgerToken() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.wgerToken
+}
+
+func WgerEnabled() bool {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.wgerURL != "" && globalConfig.wgerToken != ""
+}
+
+func FitbitClientID() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.fitbitClientID
+}
+
+func FitbitClientSecret() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.fitbitClientSecret
+}
+
+func FitbitRedirectURI() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.fitbitRedirectURI
+}
+
+func FitbitEnabled() bool {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.fitbitClientID != "" && globalConfig.fitbitClientSecret != ""
+}
+
+func KoitoURL() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.koitoURL
+}
+
+func KoitoAPIKey() string {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.koitoAPIKey
+}
+
+func WgerSyncInterval() time.Duration {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.wgerSyncInterval
+}
+
+func FitbitSyncInterval() time.Duration {
+	lock.RLock()
+	defer lock.RUnlock()
+	return globalConfig.fitbitSyncInterval
 }

@@ -2,29 +2,23 @@ package engine
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
 
-	"github.com/gabehf/koito/engine/middleware"
-	"github.com/gabehf/koito/internal/catalog"
-	"github.com/gabehf/koito/internal/cfg"
-	"github.com/gabehf/koito/internal/db"
-	"github.com/gabehf/koito/internal/db/psql"
-	"github.com/gabehf/koito/internal/images"
-	"github.com/gabehf/koito/internal/importer"
-	"github.com/gabehf/koito/internal/logger"
-	mbz "github.com/gabehf/koito/internal/mbz"
-	"github.com/gabehf/koito/internal/models"
-	"github.com/gabehf/koito/internal/utils"
+	"github.com/0bby/genki/engine/middleware"
+	"github.com/0bby/genki/internal/cfg"
+	"github.com/0bby/genki/internal/db"
+	"github.com/0bby/genki/internal/db/psql"
+	"github.com/0bby/genki/internal/logger"
+	"github.com/0bby/genki/internal/models"
+	gosync "github.com/0bby/genki/internal/sync"
+	"github.com/0bby/genki/internal/utils"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog"
@@ -42,13 +36,9 @@ func Run(
 
 	l := logger.Get()
 
-	l.Debug().Msg("Engine: Starting application initialization")
-
 	if cfg.StructuredLogging() {
-		l.Debug().Msg("Engine: Enabling structured logging")
 		*l = l.Output(w)
 	} else {
-		l.Debug().Msg("Engine: Enabling console logging")
 		*l = l.Output(zerolog.ConsoleWriter{
 			Out:        w,
 			TimeFormat: time.RFC3339,
@@ -60,7 +50,7 @@ func Run(
 
 	ctx := logger.NewContext(l)
 
-	l.Info().Msgf("Koito %s", version)
+	l.Info().Msgf("Genki %s", version)
 
 	l.Debug().Msgf("Engine: Checking config directory: %s", cfg.ConfigDir())
 	_, err = os.Stat(cfg.ConfigDir())
@@ -69,18 +59,6 @@ func Run(
 		err = os.MkdirAll(cfg.ConfigDir(), 0744)
 		if err != nil {
 			l.Fatal().Err(err).Msg("Engine: Failed to create config directory")
-			return err
-		}
-	}
-	l.Info().Msgf("Engine: Using config directory: %s", cfg.ConfigDir())
-
-	l.Debug().Msgf("Engine: Checking import directory: %s", path.Join(cfg.ConfigDir(), "import"))
-	_, err = os.Stat(path.Join(cfg.ConfigDir(), "import"))
-	if err != nil {
-		l.Info().Msgf("Engine: Creating import directory: %s", path.Join(cfg.ConfigDir(), "import"))
-		err = os.Mkdir(path.Join(cfg.ConfigDir(), "import"), 0744)
-		if err != nil {
-			l.Fatal().Err(err).Msg("Engine: Failed to create import directory")
 			return err
 		}
 	}
@@ -100,52 +78,6 @@ func Run(
 		l.Debug().Msgf("Engine: Forcing the use of timezone '%s'", cfg.ForceTZ().String())
 	}
 
-	l.Debug().Msg("Engine: Initializing MusicBrainz client")
-	var mbzC mbz.MusicBrainzCaller
-	if !cfg.MusicBrainzDisabled() {
-		mbzC = mbz.NewMusicBrainzClient()
-		l.Info().Msg("Engine: MusicBrainz client initialized")
-	} else {
-		mbzC = &mbz.MbzErrorCaller{}
-		l.Warn().Msg("Engine: MusicBrainz client disabled")
-	}
-
-	if cfg.SubsonicEnabled() {
-		l.Debug().Msg("Engine: Checking Subsonic configuration")
-		pingURL := cfg.SubsonicUrl() + "/rest/ping.view?" + cfg.SubsonicParams() + "&f=json&v=1&c=koito"
-
-		resp, err := http.Get(pingURL)
-		if err != nil {
-			l.Fatal().Err(err).Msg("Engine: Failed to contact Subsonic server! Ensure the provided URL is correct")
-		} else {
-			defer resp.Body.Close()
-
-			var result struct {
-				Response struct {
-					Status string `json:"status"`
-				} `json:"subsonic-response"`
-			}
-
-			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-				l.Fatal().Err(err).Msg("Engine: Failed to parse Subsonic response")
-			} else if result.Response.Status != "ok" {
-				l.Fatal().Msg("Engine: Provided Subsonic credentials are invalid")
-			} else {
-				l.Info().Msg("Engine: Subsonic credentials validated successfully")
-			}
-		}
-	}
-
-	l.Debug().Msg("Engine: Initializing image sources")
-	images.Initialize(images.ImageSourceOpts{
-		UserAgent:      cfg.UserAgent(),
-		EnableCAA:      !cfg.CoverArtArchiveDisabled(),
-		EnableDeezer:   !cfg.DeezerDisabled(),
-		EnableSubsonic: cfg.SubsonicEnabled(),
-		EnableLastFM:   cfg.LastFMApiKey() != "",
-	})
-	l.Info().Msg("Engine: Image sources initialized")
-
 	l.Debug().Msg("Engine: Checking for default user")
 	userCount, _ := store.CountUsers(ctx)
 	if userCount < 1 {
@@ -162,11 +94,10 @@ func Run(
 		if err != nil {
 			l.Fatal().Err(err).Msg("Engine: Failed to generate default API key")
 		}
-		label := "Default"
 		_, err = store.SaveApiKey(ctx, db.SaveApiKeyOpts{
 			Key:    apikey,
 			UserID: user.ID,
-			Label:  label,
+			Label:  "Default",
 		})
 		if err != nil {
 			l.Fatal().Err(err).Msg("Engine: Failed to save default API key in database")
@@ -183,16 +114,6 @@ func Run(
 		l.Info().Msgf("Engine: Allowing hosts: %v", cfg.AllowedHosts())
 	}
 
-	if len(cfg.AllowedOrigins()) == 0 || cfg.AllowedOrigins()[0] == "" {
-		l.Info().Msgf("Engine: Using default CORS policy")
-	} else {
-		l.Info().Msgf("Engine: CORS policy: Allowing origins: %v", cfg.AllowedOrigins())
-	}
-
-	if cfg.LbzRelayEnabled() && (cfg.LbzRelayUrl() == "" || cfg.LbzRelayToken() == "") {
-		l.Warn().Msg("You have enabled ListenBrainz relay, but either the URL or token is missing. Double check your configuration to make sure it is correct!")
-	}
-
 	l.Debug().Msg("Engine: Setting up HTTP server")
 	var ready atomic.Bool
 	mux := chi.NewRouter()
@@ -201,7 +122,8 @@ func Run(
 	mux.Use(chimiddleware.Recoverer)
 	mux.Use(chimiddleware.RealIP)
 	mux.Use(middleware.AllowedHosts)
-	bindRoutes(mux, &ready, store, mbzC)
+	syncManager := gosync.NewManager(store, l)
+	bindRoutes(mux, &ready, store, syncManager)
 
 	httpServer := &http.Server{
 		Addr:    cfg.ListenAddr(),
@@ -216,25 +138,9 @@ func Run(
 		}
 	}()
 
-	l.Info().Msg("Engine: Beginning startup tasks...")
-
-	l.Debug().Msg("Engine: Checking import configuration")
-	if !cfg.SkipImport() {
-		go func() {
-			RunImporter(l, store, mbzC)
-		}()
-	}
-
-	l.Info().Msg("Engine: Pruning orphaned images")
-	go catalog.PruneOrphanedImages(logger.NewContext(l), store)
-	l.Info().Msg("Engine: Running duration backfill task")
-	go catalog.BackfillTrackDurationsFromMusicBrainz(ctx, store, mbzC)
-	l.Info().Msg("Engine: Attempting to fetch missing artist images")
-	go catalog.FetchMissingArtistImages(ctx, store)
-	l.Info().Msg("Engine: Attempting to fetch missing album images")
-	go catalog.FetchMissingAlbumImages(ctx, store)
-
+	syncManager.Start(ctx)
 	l.Info().Msg("Engine: Initialization finished")
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -242,68 +148,12 @@ func Run(
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	syncManager.Stop()
 	l.Info().Msg("Engine: Waiting for all processes to finish")
-	mbzC.Shutdown()
 	if err := httpServer.Shutdown(ctx); err != nil {
 		l.Fatal().Err(err).Msg("Engine: Error during server shutdown")
 		return err
 	}
 	l.Info().Msg("Engine: Shutdown successful")
 	return nil
-}
-
-func RunImporter(l *zerolog.Logger, store db.DB, mbzc mbz.MusicBrainzCaller) {
-	l.Debug().Msg("Importer: Checking for import files...")
-	files, err := os.ReadDir(path.Join(cfg.ConfigDir(), "import"))
-	if err != nil {
-		l.Err(err).Msg("Importer: Failed to read files from import dir")
-	}
-	if len(files) > 0 {
-		l.Info().Msg("Importer: Files found in import directory. Attempting to import...")
-	} else {
-		return
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			l.Error().Interface("recover", r).Msg("Importer: Panic when importing files")
-		}
-	}()
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		if strings.Contains(file.Name(), "Streaming_History_Audio") {
-			l.Info().Msgf("Importer: Import file %s detecting as being Spotify export", file.Name())
-			err := importer.ImportSpotifyFile(logger.NewContext(l), store, file.Name())
-			if err != nil {
-				l.Err(err).Msgf("Importer: Failed to import file: %s", file.Name())
-			}
-		} else if strings.Contains(file.Name(), "maloja") {
-			l.Info().Msgf("Importer: Import file %s detecting as being Maloja export", file.Name())
-			err := importer.ImportMalojaFile(logger.NewContext(l), store, file.Name())
-			if err != nil {
-				l.Err(err).Msgf("Importer: Failed to import file: %s", file.Name())
-			}
-		} else if strings.Contains(file.Name(), "recenttracks") {
-			l.Info().Msgf("Importer: Import file %s detecting as being ghan.nl LastFM export", file.Name())
-			err := importer.ImportLastFMFile(logger.NewContext(l), store, mbzc, file.Name())
-			if err != nil {
-				l.Err(err).Msgf("Importer: Failed to import file: %s", file.Name())
-			}
-		} else if strings.Contains(file.Name(), "listenbrainz") {
-			l.Info().Msgf("Importer: Import file %s detecting as being ListenBrainz export", file.Name())
-			err := importer.ImportListenBrainzExport(logger.NewContext(l), store, mbzc, file.Name())
-			if err != nil {
-				l.Err(err).Msgf("Importer: Failed to import file: %s", file.Name())
-			}
-		} else if strings.Contains(file.Name(), "koito") {
-			l.Info().Msgf("Importer: Import file %s detecting as being Koito export", file.Name())
-			err := importer.ImportKoitoFile(logger.NewContext(l), store, file.Name())
-			if err != nil {
-				l.Err(err).Msgf("Importer: Failed to import file: %s", file.Name())
-			}
-		} else {
-			l.Warn().Msgf("Importer: File %s not recognized as a valid import file; make sure it is valid and named correctly", file.Name())
-		}
-	}
 }

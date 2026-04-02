@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gabehf/koito/internal/cfg"
-	"github.com/gabehf/koito/internal/utils"
+	"github.com/0bby/genki/internal/cfg"
+	"github.com/0bby/genki/internal/utils"
 )
 
 type ServerConfig struct {

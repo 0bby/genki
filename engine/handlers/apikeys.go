@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gabehf/koito/engine/middleware"
-	"github.com/gabehf/koito/internal/db"
-	"github.com/gabehf/koito/internal/logger"
-	"github.com/gabehf/koito/internal/utils"
+	"github.com/0bby/genki/engine/middleware"
+	"github.com/0bby/genki/internal/db"
+	"github.com/0bby/genki/internal/logger"
+	"github.com/0bby/genki/internal/utils"
 )
 
 func GenerateApiKeyHandler(store db.DB) http.HandlerFunc {

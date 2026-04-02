@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gabehf/koito/internal/models"
-	"github.com/gabehf/koito/internal/repository"
+	"github.com/0bby/genki/internal/models"
+	"github.com/0bby/genki/internal/repository"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )

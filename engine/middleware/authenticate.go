@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gabehf/koito/internal/cfg"
-	"github.com/gabehf/koito/internal/db"
-	"github.com/gabehf/koito/internal/logger"
-	"github.com/gabehf/koito/internal/models"
-	"github.com/gabehf/koito/internal/utils"
+	"github.com/0bby/genki/internal/cfg"
+	"github.com/0bby/genki/internal/db"
+	"github.com/0bby/genki/internal/logger"
+	"github.com/0bby/genki/internal/models"
+	"github.com/0bby/genki/internal/utils"
 	"github.com/google/uuid"
 )
 

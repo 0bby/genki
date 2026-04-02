@@ -12,90 +12,9 @@ CREATE TYPE role AS ENUM (
     'user'
 );
 
--- Functions
-
--- +goose StatementBegin
-CREATE FUNCTION delete_orphan_releases() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM artist_releases
-        WHERE release_id = OLD.release_id
-    ) THEN
-        DELETE FROM releases WHERE id = OLD.release_id;
-    END IF;
-    RETURN NULL;
-END;
-$$;
--- +goose StatementEnd
-
--- Tables
-CREATE TABLE artists (
-    id integer NOT NULL GENERATED ALWAYS AS IDENTITY (
-        SEQUENCE NAME artists_id_seq
-        START WITH 1
-        INCREMENT BY 1
-        NO MINVALUE
-        NO MAXVALUE
-        CACHE 1
-    ),
-    musicbrainz_id UUID UNIQUE,
-    image UUID,
-    image_source text,
-    CONSTRAINT artists_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE artist_aliases (
-    artist_id integer NOT NULL,
-    alias text NOT NULL,
-    source text NOT NULL,
-    is_primary boolean NOT NULL,
-    CONSTRAINT artist_aliases_pkey PRIMARY KEY (artist_id, alias)
-);
-
-CREATE TABLE releases (
-    id integer NOT NULL GENERATED ALWAYS AS IDENTITY (
-        SEQUENCE NAME releases_id_seq
-        START WITH 1
-        INCREMENT BY 1
-        NO MINVALUE
-        NO MAXVALUE
-        CACHE 1
-    ),
-    musicbrainz_id UUID UNIQUE,
-    image UUID,
-    various_artists boolean DEFAULT false NOT NULL,
-    image_source text,
-    CONSTRAINT releases_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE artist_releases (
-    artist_id integer NOT NULL,
-    release_id integer NOT NULL,
-    CONSTRAINT artist_releases_pkey PRIMARY KEY (artist_id, release_id)
-);
-
-CREATE TABLE tracks (
-    id integer NOT NULL GENERATED ALWAYS AS IDENTITY (
-        SEQUENCE NAME tracks_id_seq
-        START WITH 1
-        INCREMENT BY 1
-        NO MINVALUE
-        NO MAXVALUE
-        CACHE 1
-    ),
-    musicbrainz_id UUID UNIQUE,
-    duration integer DEFAULT 0 NOT NULL,
-    release_id integer NOT NULL,
-    CONSTRAINT tracks_pkey PRIMARY KEY (id)
-);
-
-CREATE TABLE artist_tracks (
-    artist_id integer NOT NULL,
-    track_id integer NOT NULL,
-    CONSTRAINT artist_tracks_pkey PRIMARY KEY (artist_id, track_id)
-);
+-- ============================================================
+-- Auth tables (preserved from Koito)
+-- ============================================================
 
 CREATE TABLE users (
     id integer NOT NULL GENERATED ALWAYS AS IDENTITY (
@@ -128,14 +47,6 @@ CREATE TABLE api_keys (
     CONSTRAINT api_keys_pkey PRIMARY KEY (id)
 );
 
-CREATE TABLE release_aliases (
-    release_id integer NOT NULL,
-    alias text NOT NULL,
-    source text NOT NULL,
-    is_primary boolean NOT NULL,
-    CONSTRAINT release_aliases_pkey PRIMARY KEY (release_id, alias)
-);
-
 CREATE TABLE sessions (
     id UUID NOT NULL,
     user_id integer NOT NULL,
@@ -145,138 +56,221 @@ CREATE TABLE sessions (
     CONSTRAINT sessions_pkey PRIMARY KEY (id)
 );
 
-CREATE TABLE track_aliases (
-    track_id integer NOT NULL,
-    alias text NOT NULL,
-    is_primary boolean NOT NULL,
+-- ============================================================
+-- Exercise domain
+-- ============================================================
+
+CREATE TABLE exercise_categories (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name text NOT NULL UNIQUE,
+    wger_id integer UNIQUE
+);
+
+CREATE TABLE muscles (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name text NOT NULL UNIQUE,
+    name_en text,
+    is_front boolean NOT NULL DEFAULT true,
+    wger_id integer UNIQUE
+);
+
+CREATE TABLE exercises (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name text NOT NULL,
+    description text DEFAULT '',
+    category_id integer REFERENCES exercise_categories(id),
+    wger_id integer UNIQUE,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE exercise_muscles (
+    exercise_id integer NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    muscle_id integer NOT NULL REFERENCES muscles(id) ON DELETE CASCADE,
+    is_primary boolean NOT NULL DEFAULT true,
+    PRIMARY KEY (exercise_id, muscle_id)
+);
+
+-- ============================================================
+-- Workout tracking
+-- ============================================================
+
+CREATE TABLE workouts (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    started_at timestamptz NOT NULL,
+    ended_at timestamptz,
+    duration_minutes integer,
+    title text DEFAULT '',
+    notes text DEFAULT '',
+    source text NOT NULL DEFAULT 'manual',
+    source_id text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(user_id, source, source_id)
+);
+
+CREATE TABLE workout_sets (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    workout_id integer NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
+    exercise_id integer NOT NULL REFERENCES exercises(id),
+    set_number integer NOT NULL DEFAULT 1,
+    reps integer,
+    weight_kg numeric(7,2),
+    duration_seconds integer,
+    rpe numeric(3,1),
+    logged_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- Passive / biometric data (Fitbit, etc.)
+-- ============================================================
+
+CREATE TABLE daily_steps (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    step_count integer NOT NULL,
+    source text NOT NULL DEFAULT 'fitbit',
+    UNIQUE(user_id, date, source)
+);
+
+CREATE TABLE daily_activity (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    active_minutes integer NOT NULL DEFAULT 0,
+    fairly_active_minutes integer DEFAULT 0,
+    lightly_active_minutes integer DEFAULT 0,
+    sedentary_minutes integer DEFAULT 0,
+    calories_burned integer,
+    source text NOT NULL DEFAULT 'fitbit',
+    UNIQUE(user_id, date, source)
+);
+
+CREATE TABLE sleep_logs (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    total_minutes integer NOT NULL,
+    deep_minutes integer,
+    light_minutes integer,
+    rem_minutes integer,
+    awake_minutes integer,
+    efficiency integer,
+    start_time timestamptz,
+    end_time timestamptz,
+    source text NOT NULL DEFAULT 'fitbit',
+    source_id text,
+    UNIQUE(user_id, date, source)
+);
+
+CREATE TABLE heart_rate_daily (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    resting_hr integer,
+    avg_hr integer,
+    max_hr integer,
+    source text NOT NULL DEFAULT 'fitbit',
+    UNIQUE(user_id, date, source)
+);
+
+CREATE TABLE body_measurements (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    weight_kg numeric(6,2),
+    body_fat_pct numeric(5,2),
+    measurement_category text,
+    measurement_value numeric(8,2),
+    source text NOT NULL DEFAULT 'wger',
+    UNIQUE(user_id, date, measurement_category, source)
+);
+
+-- ============================================================
+-- Sync infrastructure
+-- ============================================================
+
+CREATE TABLE sync_cursors (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     source text NOT NULL,
-    CONSTRAINT track_aliases_pkey PRIMARY KEY (track_id, alias)
+    resource text NOT NULL,
+    last_synced_at timestamptz NOT NULL DEFAULT now(),
+    cursor_value text,
+    UNIQUE(user_id, source, resource)
 );
 
-CREATE TABLE listens (
-    track_id integer NOT NULL,
-    listened_at timestamptz NOT NULL,
-    client text,
-    user_id integer NOT NULL,
-    CONSTRAINT listens_pkey PRIMARY KEY (track_id, listened_at)
+CREATE TABLE oauth_tokens (
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider text NOT NULL,
+    access_token text NOT NULL,
+    refresh_token text NOT NULL,
+    expires_at timestamptz NOT NULL,
+    scopes text,
+    UNIQUE(user_id, provider)
 );
 
+-- ============================================================
+-- Foreign key constraints (auth tables)
+-- ============================================================
 
--- Views
-CREATE VIEW artists_with_name AS
-    SELECT a.id,
-        a.musicbrainz_id,
-        a.image,
-        a.image_source,
-        aa.alias AS name
-    FROM (artists a
-        JOIN artist_aliases aa ON ((aa.artist_id = a.id)))
-    WHERE (aa.is_primary = true);
-
-CREATE VIEW releases_with_title AS
-    SELECT r.id,
-        r.musicbrainz_id,
-        r.image,
-        r.various_artists,
-        r.image_source,
-        ra.alias AS title
-    FROM (releases r
-        JOIN release_aliases ra ON ((ra.release_id = r.id)))
-    WHERE (ra.is_primary = true);
-
-CREATE VIEW tracks_with_title AS
-    SELECT t.id,
-        t.musicbrainz_id,
-        t.duration,
-        t.release_id,
-        ta.alias AS title
-    FROM (tracks t
-        JOIN track_aliases ta ON ((ta.track_id = t.id)))
-    WHERE (ta.is_primary = true);
-
--- Foreign Key Constraints
 ALTER TABLE ONLY api_keys
     ADD CONSTRAINT api_keys_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY artist_aliases
-    ADD CONSTRAINT artist_aliases_artist_id_fkey FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY artist_releases
-    ADD CONSTRAINT artist_releases_artist_id_fkey FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY artist_releases
-    ADD CONSTRAINT artist_releases_release_id_fkey FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY artist_tracks
-    ADD CONSTRAINT artist_tracks_artist_id_fkey FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY artist_tracks
-    ADD CONSTRAINT artist_tracks_track_id_fkey FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY listens
-    ADD CONSTRAINT listens_track_id_fkey FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY listens
-    ADD CONSTRAINT listens_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY release_aliases
-    ADD CONSTRAINT release_aliases_release_id_fkey FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY sessions
     ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY track_aliases
-    ADD CONSTRAINT track_aliases_track_id_fkey FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE;
-
-ALTER TABLE ONLY tracks
-    ADD CONSTRAINT track_release_id_fkey FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE;
-
+-- ============================================================
 -- Indexes
-CREATE INDEX idx_artist_aliases_alias_trgm ON artist_aliases USING gin (alias gin_trgm_ops);
-CREATE INDEX idx_artist_aliases_artist_id ON artist_aliases USING btree (artist_id);
-CREATE INDEX idx_artist_releases ON artist_releases USING btree (artist_id, release_id);
-CREATE INDEX idx_release_aliases_alias_trgm ON release_aliases USING gin (alias gin_trgm_ops);
-CREATE INDEX idx_tracks_release_id ON tracks USING btree (release_id);
-CREATE INDEX listens_listened_at_idx ON listens USING btree (listened_at);
-CREATE INDEX listens_track_id_listened_at_idx ON listens USING btree (track_id, listened_at);
-CREATE INDEX release_aliases_release_id_idx ON release_aliases USING btree (release_id) WHERE (is_primary = true);
-CREATE INDEX track_aliases_track_id_idx ON track_aliases USING btree (track_id) WHERE (is_primary = true);
-CREATE INDEX idx_track_aliases_alias_trgm ON track_aliases USING gin (alias gin_trgm_ops);
+-- ============================================================
 
--- Triggers
-CREATE TRIGGER trg_delete_orphan_releases AFTER DELETE ON artist_releases FOR EACH ROW EXECUTE FUNCTION delete_orphan_releases();
+-- Exercise search
+CREATE INDEX idx_exercises_name_trgm ON exercises USING gin (name gin_trgm_ops);
+CREATE INDEX idx_exercises_category ON exercises(category_id);
+
+-- Workout queries
+CREATE INDEX idx_workouts_user_started ON workouts(user_id, started_at);
+CREATE INDEX idx_workouts_source ON workouts(source);
+CREATE INDEX idx_workout_sets_workout ON workout_sets(workout_id);
+CREATE INDEX idx_workout_sets_exercise ON workout_sets(exercise_id);
+
+-- Daily data queries
+CREATE INDEX idx_daily_steps_user_date ON daily_steps(user_id, date);
+CREATE INDEX idx_daily_activity_user_date ON daily_activity(user_id, date);
+CREATE INDEX idx_sleep_logs_user_date ON sleep_logs(user_id, date);
+CREATE INDEX idx_heart_rate_user_date ON heart_rate_daily(user_id, date);
+CREATE INDEX idx_body_measurements_user_date ON body_measurements(user_id, date);
+
+-- Sync
+CREATE INDEX idx_sync_cursors_user_source ON sync_cursors(user_id, source);
+CREATE INDEX idx_oauth_tokens_user ON oauth_tokens(user_id);
 
 -- +goose Down
 -- +goose StatementBegin
 SELECT 'down SQL query';
 -- +goose StatementEnd
 
--- Drop Triggers
-DROP TRIGGER IF EXISTS trg_delete_orphan_releases ON artist_releases;
-
--- Drop Views
-DROP VIEW IF EXISTS artists_with_name;
-DROP VIEW IF EXISTS releases_with_title;
-DROP VIEW IF EXISTS tracks_with_title;
-
--- Drop Tables (in reverse dependency order)
-DROP TABLE IF EXISTS listens CASCADE;
+-- Drop tables in reverse dependency order
+DROP TABLE IF EXISTS oauth_tokens CASCADE;
+DROP TABLE IF EXISTS sync_cursors CASCADE;
+DROP TABLE IF EXISTS body_measurements CASCADE;
+DROP TABLE IF EXISTS heart_rate_daily CASCADE;
+DROP TABLE IF EXISTS sleep_logs CASCADE;
+DROP TABLE IF EXISTS daily_activity CASCADE;
+DROP TABLE IF EXISTS daily_steps CASCADE;
+DROP TABLE IF EXISTS workout_sets CASCADE;
+DROP TABLE IF EXISTS workouts CASCADE;
+DROP TABLE IF EXISTS exercise_muscles CASCADE;
+DROP TABLE IF EXISTS exercises CASCADE;
+DROP TABLE IF EXISTS muscles CASCADE;
+DROP TABLE IF EXISTS exercise_categories CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
-DROP TABLE IF EXISTS artist_tracks CASCADE;
-DROP TABLE IF EXISTS artist_releases CASCADE;
-DROP TABLE IF EXISTS release_aliases CASCADE;
-DROP TABLE IF EXISTS track_aliases CASCADE;
 DROP TABLE IF EXISTS sessions CASCADE;
-DROP TABLE IF EXISTS tracks CASCADE;
-DROP TABLE IF EXISTS artists CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS artist_aliases CASCADE;
 
--- Drop Functions
-DROP FUNCTION IF EXISTS delete_orphan_releases();
-
--- Drop Types
+-- Drop types
 DROP TYPE IF EXISTS role;
 
--- Drop Extensions
+-- Drop extensions
 DROP EXTENSION IF EXISTS pg_trgm;

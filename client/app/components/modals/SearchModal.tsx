@@ -47,7 +47,7 @@ export default function SearchModal({ open, setOpen }: Props) {
         <input
           type="text"
           autoFocus
-          placeholder="Search for an artist, album, or track"
+          placeholder="Search for an exercise"
           className="w-full mx-auto fg bg rounded p-2"
           onChange={(e) => setQuery(e.target.value)}
         />

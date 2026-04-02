@@ -105,6 +105,11 @@ func TimeframeToTimeRange(tf Timeframe) (t1, t2 time.Time) {
 	return time.Time{}, time.Time{}
 }
 
+// Resolve is a convenience method that calls TimeframeToTimeRange.
+func (tf Timeframe) Resolve() (time.Time, time.Time) {
+	return TimeframeToTimeRange(tf)
+}
+
 func startOfWeek(t time.Time) time.Time {
 	// ISO week: Monday = 1
 	weekday := int(t.Weekday())

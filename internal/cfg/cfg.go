@@ -3,92 +3,72 @@ package cfg
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"strconv"
 	"strings"
+	"strconv"
 	"sync"
 	"time"
 )
 
 const (
-	// defaultBaseUrl        = "http://127.0.0.1"
-	defaultListenPort     = 4110
-	defaultMusicBrainzUrl = "https://musicbrainz.org"
+	defaultListenPort = 4110
 )
 
 const (
-	// BASE_URL_ENV                  = "KOITO_BASE_URL"
-	DATABASE_URL_ENV               = "KOITO_DATABASE_URL"
-	BIND_ADDR_ENV                  = "KOITO_BIND_ADDR"
-	LISTEN_PORT_ENV                = "KOITO_LISTEN_PORT"
-	ENABLE_STRUCTURED_LOGGING_ENV  = "KOITO_ENABLE_STRUCTURED_LOGGING"
-	ENABLE_FULL_IMAGE_CACHE_ENV    = "KOITO_ENABLE_FULL_IMAGE_CACHE"
-	LOG_LEVEL_ENV                  = "KOITO_LOG_LEVEL"
-	MUSICBRAINZ_URL_ENV            = "KOITO_MUSICBRAINZ_URL"
-	MUSICBRAINZ_RATE_LIMIT_ENV     = "KOITO_MUSICBRAINZ_RATE_LIMIT"
-	ENABLE_LBZ_RELAY_ENV           = "KOITO_ENABLE_LBZ_RELAY"
-	LBZ_RELAY_URL_ENV              = "KOITO_LBZ_RELAY_URL"
-	LBZ_RELAY_TOKEN_ENV            = "KOITO_LBZ_RELAY_TOKEN"
-	CONFIG_DIR_ENV                 = "KOITO_CONFIG_DIR"
-	DEFAULT_USERNAME_ENV           = "KOITO_DEFAULT_USERNAME"
-	DEFAULT_PASSWORD_ENV           = "KOITO_DEFAULT_PASSWORD"
-	DEFAULT_THEME_ENV              = "KOITO_DEFAULT_THEME"
-	DISABLE_DEEZER_ENV             = "KOITO_DISABLE_DEEZER"
-	DISABLE_COVER_ART_ARCHIVE_ENV  = "KOITO_DISABLE_COVER_ART_ARCHIVE"
-	DISABLE_MUSICBRAINZ_ENV        = "KOITO_DISABLE_MUSICBRAINZ"
-	SUBSONIC_URL_ENV               = "KOITO_SUBSONIC_URL"
-	SUBSONIC_PARAMS_ENV            = "KOITO_SUBSONIC_PARAMS"
-	LASTFM_API_KEY_ENV             = "KOITO_LASTFM_API_KEY"
-	SKIP_IMPORT_ENV                = "KOITO_SKIP_IMPORT"
-	ALLOWED_HOSTS_ENV              = "KOITO_ALLOWED_HOSTS"
-	CORS_ORIGINS_ENV               = "KOITO_CORS_ALLOWED_ORIGINS"
-	DISABLE_RATE_LIMIT_ENV         = "KOITO_DISABLE_RATE_LIMIT"
-	THROTTLE_IMPORTS_MS            = "KOITO_THROTTLE_IMPORTS_MS"
-	IMPORT_BEFORE_UNIX_ENV         = "KOITO_IMPORT_BEFORE_UNIX"
-	IMPORT_AFTER_UNIX_ENV          = "KOITO_IMPORT_AFTER_UNIX"
-	FETCH_IMAGES_DURING_IMPORT_ENV = "KOITO_FETCH_IMAGES_DURING_IMPORT"
-	ARTIST_SEPARATORS_ENV          = "KOITO_ARTIST_SEPARATORS_REGEX"
-	LOGIN_GATE_ENV                 = "KOITO_LOGIN_GATE"
-	FORCE_TZ                       = "KOITO_FORCE_TZ"
+	DATABASE_URL_ENV              = "GENKI_DATABASE_URL"
+	BIND_ADDR_ENV                 = "GENKI_BIND_ADDR"
+	LISTEN_PORT_ENV               = "GENKI_LISTEN_PORT"
+	ENABLE_STRUCTURED_LOGGING_ENV = "GENKI_ENABLE_STRUCTURED_LOGGING"
+	LOG_LEVEL_ENV                 = "GENKI_LOG_LEVEL"
+	CONFIG_DIR_ENV                = "GENKI_CONFIG_DIR"
+	DEFAULT_USERNAME_ENV          = "GENKI_DEFAULT_USERNAME"
+	DEFAULT_PASSWORD_ENV          = "GENKI_DEFAULT_PASSWORD"
+	DEFAULT_THEME_ENV             = "GENKI_DEFAULT_THEME"
+	ALLOWED_HOSTS_ENV             = "GENKI_ALLOWED_HOSTS"
+	CORS_ORIGINS_ENV              = "GENKI_CORS_ALLOWED_ORIGINS"
+	DISABLE_RATE_LIMIT_ENV        = "GENKI_DISABLE_RATE_LIMIT"
+	LOGIN_GATE_ENV                = "GENKI_LOGIN_GATE"
+	FORCE_TZ                      = "GENKI_FORCE_TZ"
+
+	// Fitness-specific config
+	WGER_URL_ENV              = "GENKI_WGER_URL"
+	WGER_TOKEN_ENV            = "GENKI_WGER_TOKEN"
+	FITBIT_CLIENT_ID_ENV      = "GENKI_FITBIT_CLIENT_ID"
+	FITBIT_CLIENT_SECRET_ENV  = "GENKI_FITBIT_CLIENT_SECRET"
+	FITBIT_REDIRECT_URI_ENV   = "GENKI_FITBIT_REDIRECT_URI"
+	KOITO_URL_ENV             = "GENKI_KOITO_URL"
+	KOITO_API_KEY_ENV         = "GENKI_KOITO_API_KEY"
+	WGER_SYNC_INTERVAL_ENV    = "GENKI_WGER_SYNC_INTERVAL"
+	FITBIT_SYNC_INTERVAL_ENV  = "GENKI_FITBIT_SYNC_INTERVAL"
 )
 
 type config struct {
-	bindAddr   string
-	listenPort int
-	configDir  string
-	// baseUrl              string
-	databaseUrl            string
-	musicBrainzUrl         string
-	musicBrainzRateLimit   int
-	logLevel               int
-	structuredLogging      bool
-	enableFullImageCache   bool
-	lbzRelayEnabled        bool
-	lbzRelayUrl            string
-	lbzRelayToken          string
-	defaultPw              string
-	defaultUsername        string
-	defaultTheme           string
-	disableDeezer          bool
-	disableCAA             bool
-	disableMusicBrainz     bool
-	subsonicUrl            string
-	subsonicParams         string
-	lastfmApiKey           string
-	subsonicEnabled        bool
-	skipImport             bool
-	fetchImageDuringImport bool
-	allowedHosts           []string
-	allowAllHosts          bool
-	allowedOrigins         []string
-	disableRateLimit       bool
-	importThrottleMs       int
-	userAgent              string
-	importBefore           time.Time
-	importAfter            time.Time
-	artistSeparators       []*regexp.Regexp
-	loginGate              bool
-	forceTZ                *time.Location
+	bindAddr          string
+	listenPort        int
+	configDir         string
+	databaseUrl       string
+	logLevel          int
+	structuredLogging bool
+	defaultPw         string
+	defaultUsername   string
+	defaultTheme      string
+	allowedHosts      []string
+	allowAllHosts     bool
+	allowedOrigins    []string
+	disableRateLimit  bool
+	userAgent         string
+	loginGate         bool
+	forceTZ           *time.Location
+
+	// Fitness integrations
+	wgerURL            string
+	wgerToken          string
+	fitbitClientID     string
+	fitbitClientSecret string
+	fitbitRedirectURI  string
+	koitoURL           string
+	koitoAPIKey        string
+	wgerSyncInterval   time.Duration
+	fitbitSyncInterval time.Duration
 }
 
 var (
@@ -97,7 +77,6 @@ var (
 	lock         sync.RWMutex
 )
 
-// Initialize initializes the global configuration using the provided getenv function.
 func Load(getenv func(string) string, version string) error {
 	var err error
 	once.Do(func() {
@@ -109,7 +88,6 @@ func Load(getenv func(string) string, version string) error {
 	return nil
 }
 
-// loadConfig loads the configuration from environment variables.
 func loadConfig(getenv func(string) string, version string) (*config, error) {
 	cfg := new(config)
 
@@ -123,56 +101,11 @@ func loadConfig(getenv func(string) string, version string) (*config, error) {
 	if err != nil {
 		cfg.listenPort = defaultListenPort
 	}
-	cfg.musicBrainzRateLimit, err = strconv.Atoi(getenv(MUSICBRAINZ_RATE_LIMIT_ENV))
-	if err != nil {
-		cfg.musicBrainzRateLimit = 1
-	}
-	cfg.musicBrainzUrl = getenv(MUSICBRAINZ_URL_ENV)
-	if cfg.musicBrainzUrl == "" {
-		cfg.musicBrainzUrl = defaultMusicBrainzUrl
-	}
-
-	if cfg.musicBrainzUrl == defaultMusicBrainzUrl && cfg.musicBrainzRateLimit != 1 {
-		return nil, fmt.Errorf("loadConfig: invalid configuration: %s cannot be altered when %s is default", MUSICBRAINZ_RATE_LIMIT_ENV, MUSICBRAINZ_URL_ENV)
-	}
-
-	if parseBool(getenv(ENABLE_LBZ_RELAY_ENV)) {
-		cfg.lbzRelayEnabled = true
-		cfg.lbzRelayToken = getenv(LBZ_RELAY_TOKEN_ENV)
-		cfg.lbzRelayUrl = getenv(LBZ_RELAY_URL_ENV)
-	}
-
-	beforeutx, _ := strconv.ParseInt(getenv(IMPORT_BEFORE_UNIX_ENV), 10, 64)
-	afterutx, _ := strconv.ParseInt(getenv(IMPORT_AFTER_UNIX_ENV), 10, 64)
-
-	if beforeutx > 0 {
-		cfg.importBefore = time.Unix(beforeutx, 0)
-	}
-	if afterutx > 0 {
-		cfg.importAfter = time.Unix(afterutx, 0)
-	}
-
-	cfg.importThrottleMs, _ = strconv.Atoi(getenv(THROTTLE_IMPORTS_MS))
 
 	cfg.disableRateLimit = parseBool(getenv(DISABLE_RATE_LIMIT_ENV))
-
 	cfg.structuredLogging = parseBool(getenv(ENABLE_STRUCTURED_LOGGING_ENV))
-	cfg.fetchImageDuringImport = parseBool(getenv(FETCH_IMAGES_DURING_IMPORT_ENV))
 
-	cfg.enableFullImageCache = parseBool(getenv(ENABLE_FULL_IMAGE_CACHE_ENV))
-	cfg.disableDeezer = parseBool(getenv(DISABLE_DEEZER_ENV))
-	cfg.disableCAA = parseBool(getenv(DISABLE_COVER_ART_ARCHIVE_ENV))
-	cfg.disableMusicBrainz = parseBool(getenv(DISABLE_MUSICBRAINZ_ENV))
-	cfg.subsonicUrl = getenv(SUBSONIC_URL_ENV)
-	cfg.subsonicParams = getenv(SUBSONIC_PARAMS_ENV)
-	cfg.subsonicEnabled = cfg.subsonicUrl != "" && cfg.subsonicParams != ""
-	if cfg.subsonicEnabled && (cfg.subsonicUrl == "" || cfg.subsonicParams == "") {
-		return nil, fmt.Errorf("loadConfig: invalid configuration: both %s and %s must be set in order to use subsonic image fetching", SUBSONIC_URL_ENV, SUBSONIC_PARAMS_ENV)
-	}
-	cfg.lastfmApiKey = getenv(LASTFM_API_KEY_ENV)
-	cfg.skipImport = parseBool(getenv(SKIP_IMPORT_ENV))
-
-	cfg.userAgent = fmt.Sprintf("Koito %s (contact@koito.io)", version)
+	cfg.userAgent = fmt.Sprintf("Genki %s", version)
 
 	if getenv(DEFAULT_USERNAME_ENV) == "" {
 		cfg.defaultUsername = "admin"
@@ -189,7 +122,7 @@ func loadConfig(getenv func(string) string, version string) (*config, error) {
 
 	cfg.configDir = getenv(CONFIG_DIR_ENV)
 	if cfg.configDir == "" {
-		cfg.configDir = "/etc/koito"
+		cfg.configDir = "/etc/genki"
 	}
 
 	rawHosts := getenv(ALLOWED_HOSTS_ENV)
@@ -198,18 +131,6 @@ func loadConfig(getenv func(string) string, version string) (*config, error) {
 
 	rawCors := getenv(CORS_ORIGINS_ENV)
 	cfg.allowedOrigins = strings.Split(rawCors, ",")
-
-	if getenv(ARTIST_SEPARATORS_ENV) != "" {
-		for pattern := range strings.SplitSeq(getenv(ARTIST_SEPARATORS_ENV), ";;") {
-			regex, err := regexp.Compile(pattern)
-			if err != nil {
-				return nil, fmt.Errorf("failed to compile regex pattern %s", pattern)
-			}
-			cfg.artistSeparators = append(cfg.artistSeparators, regex)
-		}
-	} else {
-		cfg.artistSeparators = []*regexp.Regexp{regexp.MustCompile(`\s+·\s+`)}
-	}
 
 	if strings.ToLower(getenv(LOGIN_GATE_ENV)) == "true" {
 		cfg.loginGate = true
@@ -234,13 +155,28 @@ func loadConfig(getenv func(string) string, version string) (*config, error) {
 	default:
 		cfg.logLevel = 1
 	}
+
+	// Fitness integrations
+	cfg.wgerURL = getenv(WGER_URL_ENV)
+	cfg.wgerToken = getenv(WGER_TOKEN_ENV)
+	cfg.fitbitClientID = getenv(FITBIT_CLIENT_ID_ENV)
+	cfg.fitbitClientSecret = getenv(FITBIT_CLIENT_SECRET_ENV)
+	cfg.fitbitRedirectURI = getenv(FITBIT_REDIRECT_URI_ENV)
+	cfg.koitoURL = getenv(KOITO_URL_ENV)
+	cfg.koitoAPIKey = getenv(KOITO_API_KEY_ENV)
+
+	cfg.wgerSyncInterval, _ = time.ParseDuration(getenv(WGER_SYNC_INTERVAL_ENV))
+	if cfg.wgerSyncInterval == 0 {
+		cfg.wgerSyncInterval = 5 * time.Minute
+	}
+	cfg.fitbitSyncInterval, _ = time.ParseDuration(getenv(FITBIT_SYNC_INTERVAL_ENV))
+	if cfg.fitbitSyncInterval == 0 {
+		cfg.fitbitSyncInterval = 15 * time.Minute
+	}
+
 	return cfg, nil
 }
 
 func parseBool(s string) bool {
-	if strings.ToLower(s) == "true" {
-		return true
-	} else {
-		return false
-	}
+	return strings.ToLower(s) == "true"
 }

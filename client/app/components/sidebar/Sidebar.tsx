@@ -1,8 +1,7 @@
-import { ExternalLink, History, Home, Info } from "lucide-react";
+import { Heart, History, Home } from "lucide-react";
 import SidebarSearch from "./SidebarSearch";
 import SidebarItem from "./SidebarItem";
 import SidebarSettings from "./SidebarSettings";
-import { getRewindParams, getRewindYear } from "~/utils/utils";
 
 export default function Sidebar() {
   const iconSize = 20;
@@ -45,27 +44,24 @@ export default function Sidebar() {
         <SidebarSearch size={iconSize} />
         <SidebarItem
           space={10}
-          to="/rewind"
-          name="Rewind"
+          to="/recap"
+          name="Recap"
           onClick={() => {}}
           modal={<></>}
         >
           <History size={iconSize} />
         </SidebarItem>
-      </div>
-      <div className="flex gap-4 sm:flex-col">
         <SidebarItem
-          icon
-          keyHint={<ExternalLink size={14} />}
-          space={22}
-          externalLink
-          to="https://koito.io"
-          name="About"
+          space={10}
+          to="/health"
+          name="Health"
           onClick={() => {}}
           modal={<></>}
         >
-          <Info size={iconSize} />
+          <Heart size={iconSize} />
         </SidebarItem>
+      </div>
+      <div className="flex gap-4 sm:flex-col">
         <SidebarSettings size={iconSize} />
       </div>
     </div>

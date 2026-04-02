@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getStats, type Stats, type ApiError } from "api/api";
+import { getStats, type FitnessStats } from "api/api";
 
 export default function AllTimeStats() {
   const { isPending, isError, data, error } = useQuery({
@@ -18,40 +18,41 @@ export default function AllTimeStats() {
     );
   } else if (isError) {
     return (
-      <>
-        <div>
-          <h3>{header}</h3>
-          <p className="error">Error: {error.message}</p>
-        </div>
-      </>
+      <div>
+        <h3>{header}</h3>
+        <p className="error">Error: {error.message}</p>
+      </div>
     );
   }
 
-  const numberClasses = "header-font font-bold text-xl";
+  const n = "header-font font-bold text-xl";
 
   return (
     <div>
       <h3>{header}</h3>
       <div>
+        <span className={n}>{data.workout_count}</span> Workouts
+      </div>
+      <div>
+        <span className={n}>{data.exercise_count}</span> Exercises
+      </div>
+      <div>
+        <span className={n}>{data.total_sets}</span> Sets
+      </div>
+      <div>
+        <span className={n}>{data.total_reps}</span> Reps
+      </div>
+      <div>
         <span
-          className={numberClasses}
-          title={Math.floor(data.minutes_listened / 60) + " hours"}
+          className={n}
+          title={Math.floor(data.total_active_minutes / 60) + " hours"}
         >
-          {data.minutes_listened}
+          {data.total_active_minutes}
         </span>{" "}
-        Minutes Listened
+        Active Minutes
       </div>
       <div>
-        <span className={numberClasses}>{data.listen_count}</span> Plays
-      </div>
-      <div>
-        <span className={numberClasses}>{data.track_count}</span> Tracks
-      </div>
-      <div>
-        <span className={numberClasses}>{data.album_count}</span> Albums
-      </div>
-      <div>
-        <span className={numberClasses}>{data.artist_count}</span> Artists
+        <span className={n}>{data.total_steps.toLocaleString()}</span> Steps
       </div>
     </div>
   );

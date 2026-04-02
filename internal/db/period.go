@@ -56,7 +56,7 @@ const (
 // E.g. if step is StepWeek and range is 4, start will be the time 00:00 on Sunday on the 4th week ago,
 // and end will be 23:59:59 on Saturday at the end of the current week.
 // If opts.Year (or opts.Year + opts.Month) is provided, start and end will simply by the start and end times of that year/month.
-func ListenActivityOptsToTimes(opts ListenActivityOpts) (start, end time.Time) {
+func ActivityOptsToTimes(opts ActivityOpts) (start, end time.Time) {
 	loc := opts.Timezone
 	if loc == nil {
 		loc, _ = time.LoadLocation("UTC")

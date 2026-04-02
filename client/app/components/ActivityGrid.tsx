@@ -2,13 +2,27 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getActivity,
   type getActivityArgs,
-  type ListenActivityItem,
+  type ActivityItem,
 } from "api/api";
 import Popup from "./Popup";
 import { useState } from "react";
 import { useTheme } from "~/hooks/useTheme";
 import ActivityOptsSelector from "./ActivityOptsSelector";
 import type { Theme } from "~/styles/themes.css";
+
+const METRIC_COLORS: Record<string, string> = {
+  workouts: "#e74c3c",
+  steps: "#27ae60",
+  sleep: "#3498db",
+  active_minutes: "#e67e22",
+};
+
+const METRIC_LABELS: Record<string, string> = {
+  workouts: "workouts",
+  steps: "steps",
+  sleep: "hours slept",
+  active_minutes: "active min",
+};
 
 function getPrimaryColor(theme: Theme): string {
   const value = theme.primary;
@@ -19,19 +33,15 @@ function getPrimaryColor(theme: Theme): string {
     const [, r, g, b] = rgbMatch.map(Number);
     return "#" + [r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("");
   }
-
   return value;
 }
+
 interface Props {
   step?: string;
   range?: number;
   month?: number;
   year?: number;
-  artistId?: number;
-  albumId?: number;
-  trackId?: number;
   configurable?: boolean;
-  autoAdjust?: boolean;
 }
 
 export default function ActivityGrid({
@@ -39,32 +49,27 @@ export default function ActivityGrid({
   range = 182,
   month = 0,
   year = 0,
-  artistId = 0,
-  albumId = 0,
-  trackId = 0,
   configurable = false,
 }: Props) {
   const [stepState, setStep] = useState(step);
   const [rangeState, setRange] = useState(range);
+  const [metric, setMetric] = useState("workouts");
 
   const { isPending, isError, data, error } = useQuery({
     queryKey: [
-      "listen-activity",
+      "activity",
       {
+        metric,
         step: stepState,
         range: rangeState,
         month: month,
         year: year,
-        artist_id: artistId,
-        album_id: albumId,
-        track_id: trackId,
       },
     ],
     queryFn: ({ queryKey }) => getActivity(queryKey[1] as getActivityArgs),
   });
 
-  const { theme } = useTheme();
-  const color = getPrimaryColor(theme);
+  const color = METRIC_COLORS[metric] || "#e74c3c";
 
   if (isPending) {
     return (
@@ -82,74 +87,71 @@ export default function ActivityGrid({
     );
   }
 
-  // from https://css-tricks.com/snippets/javascript/lighten-darken-color/
   function LightenDarkenColor(hex: string, lum: number) {
-    // validate hex string
     hex = String(hex).replace(/[^0-9a-f]/gi, "");
     if (hex.length < 6) {
       hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
     }
     lum = lum || 0;
-
-    // convert to decimal and change luminosity
-    var rgb = "#",
-      c,
-      i;
+    var rgb = "#", c, i;
     for (i = 0; i < 3; i++) {
       c = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
       c = Math.round(Math.min(Math.max(0, c + c * lum), 255)).toString(16);
       rgb += ("00" + c).substring(c.length);
     }
-
     return rgb;
   }
 
-  const getDarkenAmount = (v: number, t: number): number => {
-    // really ugly way to just check if this is for all items and not a specific item.
-    // is it jsut better to just pass the target in as a var? probably.
-    const adjustment =
-      artistId == albumId && albumId == trackId && trackId == 0 ? 10 : 1;
-
-    // automatically adjust the target value based on step
-    // the smartest way to do this would be to have the api return the
-    // highest value in the range. too bad im not smart
+  const getDarkenAmount = (v: number): number => {
+    let t: number;
     switch (stepState) {
-      case "day":
-        t = 10 * adjustment;
-        break;
-      case "week":
-        t = 20 * adjustment;
-        break;
-      case "month":
-        t = 50 * adjustment;
-        break;
-      case "year":
-        t = 100 * adjustment;
-        break;
+      case "day": t = metric === "steps" ? 10000 : 10; break;
+      case "week": t = metric === "steps" ? 70000 : 20; break;
+      case "month": t = metric === "steps" ? 300000 : 50; break;
+      case "year": t = metric === "steps" ? 3000000 : 100; break;
+      default: t = 10;
     }
-
     v = Math.min(v, t);
     return ((v - t) / t) * 0.8;
   };
 
   const CHUNK_SIZE = 26 * 7;
   const chunks = [];
-
   for (let i = 0; i < data.length; i += CHUNK_SIZE) {
     chunks.push(data.slice(i, i + CHUNK_SIZE));
   }
 
+  const label = METRIC_LABELS[metric] || metric;
+
   return (
     <div className="flex flex-col items-start">
       <h3>Activity</h3>
-      {configurable ? (
-        <ActivityOptsSelector
-          rangeSetter={setRange}
-          currentRange={rangeState}
-          stepSetter={setStep}
-          currentStep={stepState}
-        />
-      ) : null}
+      {configurable && (
+        <>
+          <div className="flex gap-2 mb-2 text-xs">
+            {Object.keys(METRIC_COLORS).map((m) => (
+              <button
+                key={m}
+                className={`px-2 py-0.5 rounded transition ${
+                  m === metric
+                    ? "font-bold border border-current"
+                    : "color-fg-secondary hover:color-fg"
+                }`}
+                style={m === metric ? { color: METRIC_COLORS[m] } : undefined}
+                onClick={() => setMetric(m)}
+              >
+                {m.replace("_", " ")}
+              </button>
+            ))}
+          </div>
+          <ActivityOptsSelector
+            rangeSetter={setRange}
+            currentRange={rangeState}
+            stepSetter={setStep}
+            currentStep={stepState}
+          />
+        </>
+      )}
 
       {chunks.map((chunk, index) => (
         <div
@@ -158,30 +160,31 @@ export default function ActivityGrid({
         >
           {chunk.map((item) => (
             <div
-              key={new Date(item.start_time).toString()}
+              key={item.start}
               className="w-[10px] sm:w-[12px] h-[10px] sm:h-[12px]"
             >
               <Popup
                 position="top"
                 space={12}
                 extraClasses="left-2"
-                inner={`${new Date(item.start_time).toLocaleDateString()} ${
-                  item.listens
-                } plays`}
+                inner={`${new Date(item.start).toLocaleDateString()} — ${
+                  metric === "sleep"
+                    ? (item.value / 60).toFixed(1) + "h"
+                    : metric === "steps"
+                    ? item.value.toLocaleString()
+                    : item.value
+                } ${label}`}
               >
                 <div
                   style={{
                     display: "inline-block",
                     background:
-                      item.listens > 0
-                        ? LightenDarkenColor(
-                            color,
-                            getDarkenAmount(item.listens, 100)
-                          )
+                      item.value > 0
+                        ? LightenDarkenColor(color, getDarkenAmount(item.value))
                         : "var(--color-bg-secondary)",
                   }}
                   className={`w-[10px] sm:w-[12px] h-[10px] sm:h-[12px] rounded-[2px] md:rounded-[3px] ${
-                    item.listens > 0
+                    item.value > 0
                       ? ""
                       : "border-[0.5px] border-(--color-bg-tertiary)"
                   }`}

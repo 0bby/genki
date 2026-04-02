@@ -1,16 +1,15 @@
 import type { Route } from "./+types/Home";
-import TopTracks from "~/components/TopTracks";
-import LastPlays from "~/components/LastPlays";
+import TopExercises from "~/components/TopExercises";
+import TopMuscles from "~/components/TopMuscles";
+import RecentWorkouts from "~/components/RecentWorkouts";
 import ActivityGrid from "~/components/ActivityGrid";
-import TopAlbums from "~/components/TopAlbums";
-import TopArtists from "~/components/TopArtists";
 import AllTimeStats from "~/components/AllTimeStats";
 import { useState } from "react";
 import PeriodSelector from "~/components/PeriodSelector";
 import { useAppContext } from "~/providers/AppProvider";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Koito" }, { name: "description", content: "Koito" }];
+  return [{ title: "Genki" }, { name: "description", content: "Genki - Fitness Dashboard" }];
 }
 
 export default function Home() {
@@ -27,13 +26,9 @@ export default function Home() {
         </div>
         <PeriodSelector setter={setPeriod} current={period} />
         <div className="flex flex-wrap gap-10 2xl:gap-20 xl:gap-10 justify-between mx-5 md:gap-5">
-          <TopArtists period={period} limit={homeItems} />
-          <TopAlbums period={period} limit={homeItems} />
-          <TopTracks period={period} limit={homeItems} />
-          <LastPlays
-            showNowPlaying={true}
-            limit={Math.floor(homeItems * 2.7)}
-          />
+          <TopExercises period={period} limit={homeItems} />
+          <TopMuscles period={period} limit={homeItems} />
+          <RecentWorkouts limit={Math.floor(homeItems * 2.7)} />
         </div>
       </div>
     </main>
