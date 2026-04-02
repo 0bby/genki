@@ -90,7 +90,7 @@ func validateSession(ctx context.Context, store db.DB, r *http.Request) (*models
 
 	l.Debug().Msgf("ValidateSession: Checking user authentication via session cookie")
 
-	cookie, err := r.Cookie("koito_session")
+	cookie, err := r.Cookie("genki_session")
 	var sid uuid.UUID
 	if err == nil {
 		sid, err = uuid.Parse(cookie.Value)

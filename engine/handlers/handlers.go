@@ -7,6 +7,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/0bby/genki/engine/middleware"
 	"github.com/0bby/genki/internal/cfg"
 	"github.com/0bby/genki/internal/db"
 	"github.com/0bby/genki/internal/logger"
@@ -137,8 +138,9 @@ func parseTZ(r *http.Request) *time.Location {
 }
 
 func getUserFromContext(r *http.Request) int32 {
-	if user, ok := r.Context().Value("user_id").(int32); ok {
-		return user
+	user := middleware.GetUserFromContext(r.Context())
+	if user != nil {
+		return user.ID
 	}
 	return 0
 }
