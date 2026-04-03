@@ -8,6 +8,7 @@ import (
 	"github.com/0bby/genki/internal/db"
 	"github.com/0bby/genki/internal/logger"
 	gosync "github.com/0bby/genki/internal/sync"
+
 )
 
 func SyncStatusHandler(store db.DB) http.HandlerFunc {
@@ -49,9 +50,8 @@ func SyncTriggerHandler(store db.DB, syncMgr *gosync.Manager) http.HandlerFunc {
 			})
 		case "fitbit":
 			userID := getUserFromContext(r)
-			fitbit := gosync.NewFitbitSync(store, logger.Get())
 			go func() {
-				if err := fitbit.SyncUser(context.Background(), userID); err != nil {
+				if err := syncMgr.TriggerFitbitSync(context.Background(), userID); err != nil {
 					l.Error().Err(err).Int32("user_id", userID).Msg("SyncTriggerHandler: fitbit sync failed")
 				}
 			}()

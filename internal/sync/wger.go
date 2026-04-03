@@ -77,6 +77,13 @@ func (w *WgerSync) SyncAll(ctx context.Context) error {
 		w.log.Error().Err(err).Msg("wger: syncWeightEntries failed")
 	}
 
+	w.store.UpsertSyncCursor(ctx, &models.SyncCursor{
+		UserID:       1,
+		Source:       "wger",
+		Resource:     "all",
+		LastSyncedAt: time.Now(),
+	})
+
 	w.log.Info().Msg("wger: sync complete")
 	return nil
 }
