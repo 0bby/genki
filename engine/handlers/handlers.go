@@ -142,5 +142,6 @@ func getUserFromContext(r *http.Request) int32 {
 	if user != nil {
 		return user.ID
 	}
-	return 0
+	// Default to user 1 (admin) for public/unauthenticated access
+	return 1
 }
