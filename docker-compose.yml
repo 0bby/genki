@@ -22,8 +22,9 @@ services:
       - GENKI_FITBIT_REDIRECT_URI=${GENKI_FITBIT_REDIRECT_URI:-https://genki.obby.page/apis/web/v1/oauth/fitbit/callback}
       - GENKI_WGER_SYNC_INTERVAL=${GENKI_WGER_SYNC_INTERVAL:-5m}
       - GENKI_FITBIT_SYNC_INTERVAL=${GENKI_FITBIT_SYNC_INTERVAL:-15m}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - wger_default
     depends_on:
       genki-db:
         condition: service_healthy
@@ -46,3 +47,7 @@ services:
 
 volumes:
   genki-pgdata:
+
+networks:
+  wger_default:
+    external: true
