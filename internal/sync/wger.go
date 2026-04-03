@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	neturl "net/url"
 	"strconv"
 	"time"
 
@@ -178,11 +179,14 @@ func fetchAll[T any](w *WgerSync, ctx context.Context, path string) ([]T, error)
 		if page.Next == "" {
 			break
 		}
-		// Next URL is absolute; strip the base
-		if len(page.Next) > len(cfg.WgerURL()) {
-			url = page.Next[len(cfg.WgerURL()):]
-		} else {
+		// Next URL is absolute from wger; extract the path+query
+		parsed, err := neturl.Parse(page.Next)
+		if err != nil {
 			break
+		}
+		url = parsed.Path
+		if parsed.RawQuery != "" {
+			url += "?" + parsed.RawQuery
 		}
 	}
 	return all, nil

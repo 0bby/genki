@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -38,7 +39,7 @@ func SyncTriggerHandler(store db.DB, syncMgr *gosync.Manager) http.HandlerFunc {
 		switch source {
 		case "wger":
 			go func() {
-				if err := syncMgr.TriggerWgerSync(r.Context()); err != nil {
+				if err := syncMgr.TriggerWgerSync(context.Background()); err != nil {
 					l.Error().Err(err).Msg("SyncTriggerHandler: wger sync failed")
 				}
 			}()
@@ -50,7 +51,7 @@ func SyncTriggerHandler(store db.DB, syncMgr *gosync.Manager) http.HandlerFunc {
 			userID := getUserFromContext(r)
 			fitbit := gosync.NewFitbitSync(store, logger.Get())
 			go func() {
-				if err := fitbit.SyncUser(r.Context(), userID); err != nil {
+				if err := fitbit.SyncUser(context.Background(), userID); err != nil {
 					l.Error().Err(err).Int32("user_id", userID).Msg("SyncTriggerHandler: fitbit sync failed")
 				}
 			}()

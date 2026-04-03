@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -77,14 +78,14 @@ func FitbitOAuthCallbackHandler(store db.DB) http.HandlerFunc {
 			return
 		}
 
-		// Trigger an initial sync in the background
+		// Trigger an initial sync in the background (use background context since request will end)
 		go func() {
-			if err := fitbit.SyncUser(r.Context(), userID); err != nil {
+			if err := fitbit.SyncUser(context.Background(), userID); err != nil {
 				l.Error().Err(err).Int32("user_id", userID).Msg("FitbitOAuthCallback: initial sync failed")
 			}
 		}()
 
-		// Redirect back to settings page
-		http.Redirect(w, r, "/settings?fitbit=connected", http.StatusFound)
+		// Redirect back to home page
+		http.Redirect(w, r, "/?fitbit=connected", http.StatusFound)
 	}
 }
