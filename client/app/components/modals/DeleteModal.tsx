@@ -1,4 +1,4 @@
-import { deleteItem } from "api/api";
+import { deleteWorkout } from "api/api";
 import { AsyncButton } from "../AsyncButton";
 import { Modal } from "./Modal";
 import { useNavigate } from "react-router";
@@ -18,7 +18,7 @@ export default function DeleteModal({ open, setOpen, title, id, type }: Props) {
 
   const doDelete = () => {
     setLoading(true);
-    deleteItem(type.toLowerCase(), id).then((r) => {
+    deleteWorkout(id).then((r) => {
       if (r.ok) {
         navigate(-1);
       } else {

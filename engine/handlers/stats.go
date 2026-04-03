@@ -32,14 +32,13 @@ func SummaryHandler(store db.DB) http.HandlerFunc {
 		userID := getUserFromContext(r)
 		tf := TimeframeFromRequest(r)
 
-		stats, err := store.GetFitnessStats(r.Context(), userID, tf)
+		stats, err := store.GetRecapStats(r.Context(), userID, tf)
 		if err != nil {
 			l.Error().Err(err).Msg("SummaryHandler: failed")
 			http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
 			return
 		}
 
-		// TODO: Expand with top exercises, muscle groups, etc.
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(stats)
 	}

@@ -48,14 +48,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setConfigurableHomeActivity(true);
     setHomeItems(12);
 
-    getCfg().then((cfg) => {
-      console.log(cfg);
-      if (cfg.default_theme !== "") {
-        setDefaultTheme(cfg.default_theme);
-      } else {
-        setDefaultTheme("yuu");
-      }
-    });
+    getCfg()
+      .then((cfg) => {
+        setDefaultTheme(cfg.default_theme !== "" ? cfg.default_theme : "yuu");
+      })
+      .catch(() => setDefaultTheme("yuu"));
   }, []);
 
   // Block rendering the app until config is loaded

@@ -3,7 +3,7 @@ package db
 import "time"
 
 type ActivityItem struct {
-	Start time.Time `json:"start_time"`
+	Start time.Time `json:"start"`
 	Value int64     `json:"value"`
 }
 
@@ -29,9 +29,37 @@ type FitnessStats struct {
 	TotalSets          int64   `json:"total_sets"`
 	TotalReps          int64   `json:"total_reps"`
 	TotalVolumeKg      float64 `json:"total_volume_kg"`
-	AvgWorkoutDuration int64   `json:"avg_workout_duration_min"`
+	AvgWorkoutDuration int64   `json:"avg_workout_duration"`
 	LongestStreak      int64   `json:"longest_streak"`
 	NewExercises       int64   `json:"new_exercises"`
+}
+
+type RecapStats struct {
+	Title              string                      `json:"title"`
+	TopExercises       []RankedItem[*RecapExercise] `json:"top_exercises"`
+	TopMuscles         []RankedItem[*RecapMuscle]   `json:"top_muscles"`
+	TotalWorkouts      int64                        `json:"total_workouts"`
+	TotalSets          int64                        `json:"total_sets"`
+	TotalReps          int64                        `json:"total_reps"`
+	TotalActiveMinutes int64                        `json:"total_active_minutes"`
+	AvgWorkoutDuration float64                      `json:"avg_workout_duration"`
+	ExercisesTried     int64                        `json:"exercises_tried"`
+	NewExercises       int64                        `json:"new_exercises"`
+	WorkoutStreak      int64                        `json:"workout_streak"`
+}
+
+type RecapExercise struct {
+	ID         int32  `json:"id"`
+	Name       string `json:"name"`
+	TotalSets  int64  `json:"total_sets"`
+	TotalReps  int64  `json:"total_reps"`
+}
+
+type RecapMuscle struct {
+	ID      int32  `json:"id"`
+	Name    string `json:"name"`
+	NameEn  string `json:"name_en"`
+	IsFront bool   `json:"is_front"`
 }
 
 type ActivityMetric string

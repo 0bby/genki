@@ -80,6 +80,7 @@ type DB interface {
 	// ============================================================
 
 	GetFitnessStats(ctx context.Context, userID int32, tf Timeframe) (*FitnessStats, error)
+	GetRecapStats(ctx context.Context, userID int32, tf Timeframe) (*RecapStats, error)
 
 	// ============================================================
 	// Sync

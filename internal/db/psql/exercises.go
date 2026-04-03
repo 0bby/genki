@@ -74,7 +74,7 @@ func (p *Psql) GetTopExercisesPaginated(ctx context.Context, opts db.GetItemsOpt
 	}
 	defer rows.Close()
 
-	var items []db.RankedItem[*models.Exercise]
+	items := make([]db.RankedItem[*models.Exercise], 0)
 	rank := int64(offset + 1)
 	for rows.Next() {
 		e := &models.Exercise{}
@@ -127,7 +127,7 @@ func (p *Psql) GetTopMuscleGroupsPaginated(ctx context.Context, opts db.GetItems
 	}
 	defer rows.Close()
 
-	var items []db.RankedItem[*models.Muscle]
+	items := make([]db.RankedItem[*models.Muscle], 0)
 	rank := int64(offset + 1)
 	for rows.Next() {
 		m := &models.Muscle{}

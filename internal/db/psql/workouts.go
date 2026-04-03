@@ -63,7 +63,7 @@ func (p *Psql) GetWorkoutsPaginated(ctx context.Context, opts db.GetItemsOpts) (
 	}
 	defer rows.Close()
 
-	var items []*models.Workout
+	items := make([]*models.Workout, 0)
 	for rows.Next() {
 		w := &models.Workout{}
 		if err := rows.Scan(&w.ID, &w.UserID, &w.StartedAt, &w.EndedAt, &w.DurationMinutes, &w.Title, &w.Notes, &w.Source, &w.SourceID, &w.CreatedAt); err != nil {
